@@ -49,9 +49,10 @@
   .serif{font-family:var(--serif);}
   a,button{font-family:inherit;}
   button{cursor:pointer;border:none;background:none;color:inherit;}
-  input,select{font-family:inherit;color:inherit;}
+  input,select{font-family:inherit;color:inherit;min-width:0;} /* min-width:0:flex 行里允许收缩,否则手机上撑破页面 */
   input:focus,select:focus{outline:none;}
 
+  body{overflow-x:hidden;}
   #app{display:flex;min-height:100vh;}
   /* Sidebar (wide screens) */
   #sidenav{width:230px;flex-shrink:0;padding:32px 18px;border-right:1px solid var(--line);display:flex;flex-direction:column;}
@@ -219,10 +220,18 @@
     #mobilenav{display:flex;}
     /* iOS 聚焦自动放大:输入控件必须 ≥16px,!important 压过模板里的内联字号 */
     input,select{font-size:16px !important;}
-    .view{padding:24px 16px;}
+    .view{padding:20px 14px;}
+    .view h1{font-size:23px;}
     main{padding-bottom:calc(84px + env(safe-area-inset-bottom));}
     .task-check,.txn-row .rm,.habit-del,.gadget-del{min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center;}
-    #themeBtn{top:10px;right:10px;}
+    #themeBtn{top:10px;right:10px;width:34px;height:34px;}
+    .amount-row input[type=date],.gadget-form input[type=date]{max-width:40vw;}
+    .summary3{gap:7px;}
+    .stat{padding:10px 4px;}
+    .stat .v{font-size:13.5px;}
+    .card .v{font-size:20px;}
+    .task-expand select{flex:1;}
+    .chart-wrap{height:190px;}
   }
 </style>
 </head>
