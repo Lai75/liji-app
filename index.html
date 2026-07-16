@@ -429,6 +429,7 @@ async function syncNow(){
   finally{ syncing = false; }
 }
 window.addEventListener('online', ()=>syncNow());
+setInterval(()=>{ if(document.visibilityState==='visible') syncNow(); }, 60000); // 页面开着也每分钟拉一次
 async function persistTasks(){ await saveKey('shiji-tasks', tasks); }
 async function persistTxns(){ await saveKey('shiji-transactions', txns); }
 async function persistHabits(){ await saveKey('shiji-habits', habits); }
