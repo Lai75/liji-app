@@ -65,8 +65,6 @@ function computeStreak(habit){
   // walk backward from today over due days until a due day is missing a checkin
   let cur = 0, best = 0, running = 0;
   const d = new Date();
-  let cursor = new Date(d);
-  let countingCurrent = true;
   // best streak: scan all checkins chronologically over the last 365 due days
   const dueDates = [];
   const scan = new Date(d);
