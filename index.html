@@ -122,6 +122,15 @@
   .sub-add{display:flex;align-items:center;gap:8px;margin-top:4px;}
   .sub-add input{flex:1;border:none;outline:none;background:transparent;font-size:12.5px;padding:5px 0;}
 
+  /* task calendar */
+  .cal-week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-cell{aspect-ratio:1;border:1px solid var(--line);border-radius:10px;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:13px;padding:0;}
+  .cal-cell.today{border-color:var(--gold);color:var(--gold);font-weight:700;}
+  .cal-cell.selected{background:var(--gold-soft);border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-line);}
+  .cal-count{font-size:10px;line-height:1;padding:2px 5px;border-radius:999px;background:var(--gold-soft);color:var(--gold);font-weight:700;}
+  .cal-count.alldone{background:var(--income-soft);color:var(--income);}
+
   /* ledger */
   .typebtns{display:flex;gap:8px;margin-bottom:12px;}
   .typebtns button{flex:1;padding:9px;border-radius:12px;font-size:14px;font-weight:600;background:var(--soft);color:var(--muted);border:1px solid transparent;letter-spacing:.08em;}
@@ -179,6 +188,20 @@
   .heatmap-year .cell{width:10px;height:10px;border-radius:2px;background:var(--soft-line);}
   .heatmap-year .cell.checked{background:var(--habit);}
   .habit-stats{display:flex;gap:14px;margin-top:12px;font-size:11px;color:var(--muted);}
+  .habit-subs{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+  .habit-sub{font-size:12px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:var(--soft);color:var(--muted);display:flex;align-items:center;gap:5px;}
+  .habit-sub.done{border-color:var(--habit);background:var(--habit-soft);color:var(--habit);font-weight:600;}
+  .habit-sub .subdel{color:var(--faint);padding:0 2px;}
+  .habit-reward{font-size:12px;color:var(--flag);margin-top:10px;cursor:pointer;}
+  .habit-actions{display:flex;gap:14px;margin-top:10px;}
+  .habit-actions button{font-size:11px;color:var(--muted);}
+  .mood-row{display:flex;gap:6px;}
+  .mood-row button{font-size:20px;padding:4px 7px;border-radius:8px;opacity:.4;}
+  .mood-row button.active{opacity:1;background:var(--habit-soft);}
+  #journalText{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:9px 12px;font-size:13px;color:inherit;font-family:inherit;resize:vertical;outline:none;margin-top:10px;min-height:64px;}
+  #journalText:focus{border-color:var(--gold-line);}
+  .journal-entry{border-top:1px solid var(--soft-line);padding:8px 0;font-size:12.5px;color:var(--ink-soft);white-space:pre-wrap;}
+  .journal-entry .jd{font-size:11px;color:var(--muted);margin-bottom:3px;}
 
   /* gadgets */
   .gadget-form select{font-size:13px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:var(--card);}
@@ -214,6 +237,20 @@
 
   svg{display:block;}
   #themeBtn{position:fixed;top:14px;right:14px;z-index:30;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card);font-size:15px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+
+  #toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--card);border:1px solid var(--gold-line);color:var(--ink);padding:10px 18px;border-radius:999px;font-size:13px;box-shadow:var(--shadow);z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;max-width:88vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #toast.show{opacity:1;}
+
+  /* overview: today glance + habit grid */
+  .glance-row{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:8px 0;font-size:13px;border-bottom:1px solid var(--soft-line);}
+  .glance-row:last-of-type{border-bottom:none;}
+  .glance-row .gc{flex-shrink:0;}
+  .glance-row .gt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .glance-row .gt.done{text-decoration:line-through;color:var(--muted);}
+  .glance-sec{font-size:11px;letter-spacing:.08em;color:var(--muted);margin-bottom:2px;}
+  .ovgrid{display:grid;gap:4px 3px;align-items:center;font-size:12px;}
+  .ovgrid .cell{width:100%;max-width:16px;height:14px;border-radius:3px;background:var(--soft-line);justify-self:center;}
+  .ovgrid .hn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px;}
 
   @media (max-width: 760px){
     #sidenav{display:none;}
@@ -288,6 +325,7 @@ const HABIT_COLORS = ['#9C8EC4','#BE6B50','#74997F','#C99B3F','#B08F4A','#B27E52
 // 旧版习惯颜色 → 新配色(习惯颜色存在数据里,载入时迁移)
 const OLD_HABIT_COLORS = {'#6B5B95':'#9C8EC4','#B54834':'#BE6B50','#4C7A5E':'#74997F','#D9A441':'#C99B3F','#3D5A6C':'#B08F4A','#8C7A5B':'#B27E52'};
 const WEEKDAYS = ['日','一','二','三','四','五','六'];
+const MOODS = ['😄','🙂','😐','😞','😭'];
 
 const GADGET_CATS = [
   {id:'phone',name:'手机',icon:'📱'},
@@ -319,8 +357,13 @@ let habitHeatYear = {}; // id -> 是否显示年视图(会话内有效即可,不
 let gadgetFilter = 'all';
 let gadgetFormCat = GADGET_CATS[0].id;
 let gadgetFormChannel = CHANNELS[0];
-let habitFreqType = 'daily'; // daily | weekly
+let habitFreqType = 'daily'; // daily | weekly | weeklyCount
 let habitSelectedDays = [1,2,3,4,5]; // default weekdays for weekly picker
+let habitWeeklyTarget = 3; // 「每周 N 次」的默认次数
+let journal = {}; // 'YYYY-MM-DD' -> {mood, text} 心情随笔
+let taskView = 'list'; // list | cal
+let calCursor = todayStr().slice(0,7);
+let calSelected = todayStr();
 let activeTab = 'tasks';
 let taskFilter = 'active';
 let taskList = 'all';
@@ -366,7 +409,7 @@ async function saveKey(key,value){
 /* ---------------- cloud sync (Supabase) ---------------- */
 const SB_URL = 'https://xmiqcomltvkbodbqaycg.supabase.co';
 const SB_KEY = 'sb_publishable_r6MiUsRs3CsmPggYhEqY0g_bh95lo5I';
-const SYNC_KEYS = ['shiji-tasks','shiji-transactions','shiji-habits','shiji-gadgets','shiji-custom-cats','shiji-budget'];
+const SYNC_KEYS = ['shiji-tasks','shiji-transactions','shiji-habits','shiji-gadgets','shiji-custom-cats','shiji-budget','shiji-journal'];
 let session = JSON.parse(localStorage.getItem('shiji-session')||'null');
 let syncMeta = JSON.parse(localStorage.getItem('shiji-sync-meta')||'{}'); // key -> 本地值的时间戳(ms)
 let dirty = new Set(JSON.parse(localStorage.getItem('shiji-dirty')||'[]')); // 尚未推到云端的 key
@@ -413,7 +456,8 @@ async function pushKey(key){
 }
 // ponytail: 按 key 整体「后写覆盖」;两台设备同时改同一类数据时后保存的赢,不做行级合并
 async function syncNow(){
-  if(!session || syncing) return;
+  if(!session) return false;
+  if(syncing) return true; // 已有一次同步在跑,视作成功
   syncing = true;
   try{
     const rows = await sbRest('kv?select=key,value,updated_at');
@@ -434,7 +478,8 @@ async function syncNow(){
     lastSyncAt = new Date();
     if(pulled){ await loadAll(); setTab(activeTab); }
     else if(activeTab==='overview') renderOverview();
-  }catch(e){ console.warn('同步失败', e.message); }
+    return true;
+  }catch(e){ console.warn('同步失败', e.message); return false; }
   finally{ syncing = false; }
 }
 window.addEventListener('online', ()=>syncNow());
@@ -443,6 +488,7 @@ async function persistTasks(){ await saveKey('shiji-tasks', tasks); }
 async function persistTxns(){ await saveKey('shiji-transactions', txns); }
 async function persistHabits(){ await saveKey('shiji-habits', habits); }
 async function persistGadgets(){ await saveKey('shiji-gadgets', gadgets); }
+async function persistJournal(){ await saveKey('shiji-journal', journal); }
 
 /* ---------------- theme ---------------- */
 function applyTheme(t){
@@ -475,6 +521,7 @@ document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=
 /* ================= TASKS ================= */
 function renderTasks(){
   const el = document.getElementById('view-tasks');
+  if(taskView==='cal'){ renderTaskCalendar(el); return; }
   let list = tasks.slice();
   if(taskList!=='all') list = list.filter(t=>t.listId===taskList);
   if(taskFilter==='active') list = list.filter(t=>!t.completed);
@@ -511,6 +558,7 @@ function renderTasks(){
       <button data-f="today" class="${taskFilter==='today'?'active':''}">今天 ${counts.today}</button>
       <button data-f="done" class="${taskFilter==='done'?'active':''}">已完成 ${counts.done}</button>
       <button data-f="all" class="${taskFilter==='all'?'active':''}">全部</button>
+      <button id="calViewBtn" style="margin-left:auto;">🗓 日历</button>
     </div>
     <div id="taskList">
       ${list.length===0 ? `<div class="empty">这里空空如也，添加一件事开始吧</div>` : list.map(taskCardHtml).join('')}
@@ -518,7 +566,8 @@ function renderTasks(){
   `;
 
   el.querySelectorAll('#listchips .chip').forEach(b=>b.addEventListener('click',()=>{taskList=b.dataset.list;renderTasks();}));
-  el.querySelectorAll('.filtertabs button').forEach(b=>b.addEventListener('click',()=>{taskFilter=b.dataset.f;renderTasks();}));
+  el.querySelectorAll('.filtertabs button[data-f]').forEach(b=>b.addEventListener('click',()=>{taskFilter=b.dataset.f;renderTasks();}));
+  el.querySelector('#calViewBtn').addEventListener('click',()=>{ taskView='cal'; renderTasks(); });
   const qi = el.querySelector('#quickTitle');
   onEnter(qi, addTask);
   const listEl = el.querySelector('#taskList');
@@ -551,12 +600,112 @@ function renderTasks(){
     persistTasks(); renderTasks();
   });
   listEl.addEventListener('click', handleTaskListClick);
+  // 下拉/日期的修改必须走 change:之前放在 click 里,点开下拉那一刻就重渲染,菜单被销毁根本选不了
   listEl.addEventListener('change', e=>{
-    if(e.target.dataset.act!=='editTitle') return;
-    const t = tasks.find(x=>x.id===e.target.closest('.task-card').dataset.id);
-    const v = e.target.value.trim();
-    if(v && v!==t.title){ t.title=v; persistTasks(); renderTasks(); }
+    const act = e.target.dataset.act;
+    const card = e.target.closest('.task-card');
+    if(!act || !card) return;
+    const t = tasks.find(x=>x.id===card.dataset.id);
+    if(act==='editTitle'){
+      const v = e.target.value.trim();
+      if(v && v!==t.title){ t.title=v; persistTasks(); renderTasks(); }
+    }
+    if(act==='setList'){ t.listId=e.target.value; persistTasks(); renderTasks(); }
+    if(act==='setPriority'){ t.priority=e.target.value; persistTasks(); renderTasks(); }
+    if(act==='setDue'){ t.dueDate=e.target.value; persistTasks(); renderTasks(); }
   });
+}
+
+function renderTaskCalendar(el){
+  const today = todayStr();
+  const [y,m] = calCursor.split('-').map(Number);
+  const offset = new Date(y, m-1, 1).getDay();
+  const dim = new Date(y, m, 0).getDate();
+  let cells = '';
+  for(let i=0;i<offset;i++) cells += '<div></div>';
+  for(let d=1; d<=dim; d++){
+    const key = `${calCursor}-${String(d).padStart(2,'0')}`;
+    const dayTasks = tasks.filter(t=>t.dueDate===key);
+    const open = dayTasks.filter(t=>!t.completed).length;
+    cells += `<button class="cal-cell ${key===today?'today':''} ${key===calSelected?'selected':''}" data-date="${key}">
+      <span>${d}</span>${dayTasks.length?`<span class="cal-count ${open?'':'alldone'}">${open||'✓'}</span>`:''}
+    </button>`;
+  }
+  const selTasks = tasks.filter(t=>t.dueDate===calSelected);
+  const unscheduled = tasks.filter(t=>!t.completed && !t.dueDate);
+
+  el.innerHTML = `
+    <h1 class="serif">待办清单</h1>
+    <div class="sub">点一天，安排要做的事</div>
+    <div class="filtertabs">
+      <button id="backToList">☰ 列表</button>
+      <button class="active">🗓 日历</button>
+    </div>
+    <div class="monthnav">
+      <button id="calPrev">‹</button>
+      <span>${calCursor}</span>
+      <button id="calNext">›</button>
+    </div>
+    <div class="cal-week">${WEEKDAYS.map(w=>`<span>${w}</span>`).join('')}</div>
+    <div class="cal-grid" id="calGrid">${cells}</div>
+    <div class="box" id="calDay" style="margin-top:16px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">🗓 ${calSelected}${calSelected===today?' · 今天':''}</div>
+      ${selTasks.map(t=>`
+        <div class="subtask-row" data-tid="${t.id}">
+          <button data-act="calToggle" style="color:${t.completed?'var(--income)':'var(--faint)'};">${t.completed?'✔':'○'}</button>
+          <span class="${t.completed?'done':''}">${escapeHtml(t.title)}</span>
+          <button data-act="calUnset" title="取消这天的安排" style="color:var(--faint);">✕</button>
+        </div>`).join('') || `<div style="font-size:12.5px;color:var(--faint);padding:2px 0 8px;">这一天还没有安排任务</div>`}
+      <div class="sub-add">
+        <span style="color:var(--gold);">＋</span>
+        <input type="text" id="calQuickTitle" placeholder="添加任务到这一天，回车即可" />
+      </div>
+      ${unscheduled.length?`
+      <div class="row" style="margin-top:10px;">
+        <select id="calAssign" style="flex:1;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:var(--card);color:inherit;">
+          <option value="">📌 安排一个未定日期的任务到这天…</option>
+          ${unscheduled.map(t=>`<option value="${t.id}">${escapeHtml(t.title)}</option>`).join('')}
+        </select>
+      </div>`:''}
+    </div>
+  `;
+
+  el.querySelector('#backToList').addEventListener('click',()=>{ taskView='list'; renderTasks(); });
+  el.querySelector('#calPrev').addEventListener('click',()=>shiftCal(-1));
+  el.querySelector('#calNext').addEventListener('click',()=>shiftCal(1));
+  el.querySelector('#calGrid').addEventListener('click',e=>{
+    const c = e.target.closest('.cal-cell');
+    if(c){ calSelected = c.dataset.date; renderTasks(); }
+  });
+  el.querySelector('#calDay').addEventListener('click',e=>{
+    const act = e.target.dataset.act;
+    if(!act) return;
+    const t = tasks.find(x=>x.id===e.target.closest('.subtask-row').dataset.tid);
+    if(act==='calToggle') t.completed = !t.completed;
+    if(act==='calUnset') t.dueDate = '';
+    persistTasks(); renderTasks();
+  });
+  onEnter(el.querySelector('#calQuickTitle'), ()=>{
+    const input = document.getElementById('calQuickTitle');
+    const title = input.value.trim();
+    if(!title) return;
+    tasks.unshift({id:uid(),title,listId:'inbox',priority:'none',dueDate:calSelected,completed:false,subtasks:[],createdAt:Date.now()});
+    persistTasks(); renderTasks();
+    document.getElementById('calQuickTitle').focus();
+  });
+  el.querySelector('#calAssign')?.addEventListener('change',e=>{
+    const t = tasks.find(x=>x.id===e.target.value);
+    if(!t) return;
+    t.dueDate = calSelected;
+    persistTasks(); renderTasks();
+  });
+}
+function shiftCal(delta){
+  const [y,m] = calCursor.split('-').map(Number);
+  const d = new Date(y, m-1+delta, 1);
+  calCursor = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  calSelected = calCursor===todayStr().slice(0,7) ? todayStr() : calCursor+'-01';
+  renderTasks();
 }
 
 function taskCardHtml(t){
@@ -612,6 +761,16 @@ function taskCardHtml(t){
 
 function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+let toastTimer = null;
+function toast(msg){
+  let t = document.getElementById('toast');
+  if(!t){ t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
 // 手机输入法回车时 keydown 常报 'Unidentified'(keyCode 229),beforeinput 的 insertLineBreak 在单行 input 上也不触发;
 // 唯一可靠的是表单提交:输入法的"前往/完成"键必定触发 submit,桌面回车走隐式提交,同一条路
 function onEnter(input, fn){
@@ -651,9 +810,6 @@ function handleTaskListClick(e){
   }
   if(act==='expand'){ expandedTask = expandedTask===id? null : id; renderTasks(); return; }
   if(act==='delete'){ if(!confirm('删除这个任务?')) return; tasks = tasks.filter(x=>x.id!==id); persistTasks(); renderTasks(); return; }
-  if(act==='setList'){ t.listId=e.target.value; persistTasks(); return; }
-  if(act==='setPriority'){ t.priority=e.target.value; persistTasks(); renderTasks(); return; }
-  if(act==='setDue'){ t.dueDate=e.target.value; persistTasks(); renderTasks(); return; }
   if(act==='toggleSub'){
     const sid = e.target.closest('.subtask-row').dataset.sid;
     const s = t.subtasks.find(x=>x.id===sid); s.done=!s.done;
@@ -689,11 +845,68 @@ function handleDelegatedEnter(target){
 
 /* ================= HABITS ================= */
 function isHabitDue(habit, dateStr){
-  if(habit.freqType==='daily') return true;
+  if(habit.freqType==='daily' || habit.freqType==='weeklyCount') return true;
   const dow = new Date(dateStr+'T00:00:00').getDay();
   return habit.days.includes(dow);
 }
+// 有小习惯时 checkins[date] 存已完成的小习惯 id 数组(true = 全部完成);全勾完才算这天打卡
+function isChecked(habit, dateStr){
+  const c = habit.checkins[dateStr];
+  if(!c) return false;
+  const subs = habit.subHabits||[];
+  if(subs.length===0 || c===true) return true;
+  return Array.isArray(c) && subs.every(s=>c.includes(s.id));
+}
+function weekStartOf(d){ const w = new Date(d); w.setDate(w.getDate()-w.getDay()); return w; } // 周日起
+function countThisWeek(habit){
+  const d = weekStartOf(new Date());
+  let n = 0;
+  for(let i=0;i<7;i++){
+    const key = localDateStr(d);
+    if(key > todayStr()) break;
+    if(isChecked(habit, key)) n++;
+    d.setDate(d.getDate()+1);
+  }
+  return n;
+}
+// 「每周 N 次」的连续按周算:本周没满不算断(还在进行中)
+function computeWeekStreak(habit){
+  const target = habit.weeklyTarget||3;
+  const counts = {};
+  Object.keys(habit.checkins).forEach(k=>{
+    if(isChecked(habit,k)){ const wk = localDateStr(weekStartOf(new Date(k+'T00:00:00'))); counts[wk]=(counts[wk]||0)+1; }
+  });
+  const wk = weekStartOf(new Date());
+  let current = (counts[localDateStr(wk)]||0) >= target ? 1 : 0;
+  for(let i=0;i<520;i++){
+    wk.setDate(wk.getDate()-7);
+    if((counts[localDateStr(wk)]||0) >= target) current++;
+    else break;
+  }
+  let best = 0, run = 0;
+  const scan = weekStartOf(new Date()); scan.setDate(scan.getDate()-52*7);
+  for(let i=0;i<53;i++){
+    if((counts[localDateStr(scan)]||0) >= target){ run++; best = Math.max(best, run); }
+    else run = 0;
+    scan.setDate(scan.getDate()+7);
+  }
+  return { current, best: Math.max(best, current) };
+}
+// 本月打卡进度(奖励用):应打卡天数 vs 已打卡天数;每周 N 次按天数折算
+function monthProgress(habit){
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  const dim = new Date(y, m+1, 0).getDate();
+  let due = 0, done = 0;
+  for(let day=1; day<=dim; day++){
+    const key = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    if(habit.freqType!=='weeklyCount' && isHabitDue(habit, key)) due++;
+    if(isChecked(habit, key)) done++;
+  }
+  if(habit.freqType==='weeklyCount') due = Math.round((habit.weeklyTarget||3)*dim/7);
+  return { done, due };
+}
 function computeStreak(habit){
+  if(habit.freqType==='weeklyCount') return computeWeekStreak(habit);
   // walk backward from today over due days until a due day is missing a checkin
   let cur = 0, best = 0, running = 0;
   const d = new Date();
@@ -709,14 +922,14 @@ function computeStreak(habit){
   }
   dueDates.reverse(); // oldest -> newest
   dueDates.forEach(key=>{
-    if(habit.checkins[key]){ running++; best = Math.max(best, running); }
+    if(isChecked(habit, key)){ running++; best = Math.max(best, running); }
     else running = 0;
   });
   // current streak: from most recent due day backward
   for(let i=dueDates.length-1;i>=0;i--){
     const key = dueDates[i];
     const isToday = key===todayStr();
-    if(habit.checkins[key]){ cur++; }
+    if(isChecked(habit, key)){ cur++; }
     else{
       if(isToday) continue; // today not yet checked in doesn't break streak
       break;
@@ -725,6 +938,7 @@ function computeStreak(habit){
   return { current: cur, best };
 }
 function freqLabel(habit){
+  if(habit.freqType==='weeklyCount') return `每周 ${habit.weeklyTarget||3} 次 · 不限哪天`;
   if(habit.freqType==='daily') return '每天';
   if(habit.days.length===7) return '每天';
   const sorted = [...habit.days].sort();
@@ -741,7 +955,7 @@ function monthHeatmap(habit){
   for(let day=1; day<=daysInMonth; day++){
     const key = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const isFuture = key > todayStr();
-    const checked = habit.checkins[key];
+    const checked = isChecked(habit, key);
     cells += `<div class="cell ${isFuture?'future':''} ${checked?'checked':''}" title="${key}"></div>`;
   }
   return cells;
@@ -753,14 +967,57 @@ function yearHeatmap(habit){
   const today = todayStr();
   let cells = '';
   for(let key=localDateStr(d); key<=today; d.setDate(d.getDate()+1), key=localDateStr(d)){
-    cells += `<div class="cell ${habit.checkins[key]?'checked':''}" title="${key}"></div>`;
+    cells += `<div class="cell ${isChecked(habit,key)?'checked':''}" title="${key}"></div>`;
   }
   return cells;
+}
+
+function habitCardHtml(h, today){
+  const { current, best } = computeStreak(h);
+  const due = isHabitDue(h, today);
+  const subs = h.subHabits||[];
+  const checkedToday = isChecked(h, today);
+  const cToday = h.checkins[today];
+  const partial = !checkedToday && Array.isArray(cToday) && cToday.length>0;
+  const unit = h.freqType==='weeklyCount' ? '周' : '天';
+  const mp = monthProgress(h);
+  const rewardHit = mp.due>0 && mp.done>=mp.due;
+  return `
+  <div class="habit-card" data-id="${h.id}">
+    <div class="habit-top">
+      <span class="habit-dot" style="background:${h.color};"></span>
+      <div style="flex:1;min-width:0;">
+        <div class="habit-name">${escapeHtml(h.name)}</div>
+        <div class="habit-freq">${freqLabel(h)}${h.freqType==='weeklyCount'?` · 本周 ${countThisWeek(h)}/${h.weeklyTarget||3}`:''}</div>
+      </div>
+      <span class="habit-streak" style="color:${h.color};">🔥 ${current}</span>
+      <button class="checkin-btn ${checkedToday?'done':''}" data-act="checkin" ${due?'':'style="opacity:.35;"'}>${checkedToday?'✔':partial?`<span style="font-size:11px;" data-act="checkin">${cToday.length}/${subs.length}</span>`:''}</button>
+      <button class="habit-del" data-act="delete">🗑</button>
+    </div>
+    ${subs.length?`<div class="habit-subs">${subs.map(s=>{
+      const sdone = cToday===true || (Array.isArray(cToday) && cToday.includes(s.id));
+      return `<button class="habit-sub ${sdone?'done':''}" data-act="toggleSubHabit" data-sid="${s.id}">${sdone?'✔':'○'} ${escapeHtml(s.name)}<span class="subdel" data-act="delSubHabit" data-sid="${s.id}">✕</span></button>`;
+    }).join('')}</div>`:''}
+    ${habitHeatYear[h.id] ? `<div class="heatmap-year">${yearHeatmap(h)}</div>` : `<div class="heatmap">${monthHeatmap(h)}</div>`}
+    <div class="habit-stats">
+      <span>当前连续 ${current} ${unit}</span>
+      <span>最长连续 ${best} ${unit}</span>
+      <button data-act="toggleHeat" style="margin-left:auto;font-size:11px;color:${h.color};">${habitHeatYear[h.id]?'看本月':'看全年'}</button>
+    </div>
+    ${h.reward?`<div class="habit-reward" data-act="setReward">🎁 本月打卡 ${mp.done}/${mp.due} · ${rewardHit?`达成！奖励自己：${escapeHtml(h.reward)} 🎉`:`达成奖励：${escapeHtml(h.reward)}`}</div>`:''}
+    <div class="habit-actions">
+      <button data-act="addSubHabit">＋ 小习惯</button>
+      <button data-act="setReward">🎁 ${h.reward?'改本月奖励':'设本月奖励'}</button>
+    </div>
+  </div>`;
 }
 
 function renderHabits(){
   const el = document.getElementById('view-habits');
   const today = todayStr();
+  const pastEntries = Object.entries(journal)
+    .filter(([d,e])=> d!==today && (e.text||e.mood))
+    .sort((a,b)=> a[0]<b[0]?1:-1).slice(0,7);
 
   el.innerHTML = `
     <h1 class="serif">习惯打卡</h1>
@@ -771,11 +1028,13 @@ function renderHabits(){
         <span style="color:var(--habit);">＋</span>
         <input type="text" id="habitName" placeholder="想养成的习惯，比如“喝水 8 杯”" style="flex:1;border:none;outline:none;background:transparent;font-size:14px;" />
       </div>
-      <div class="row" style="margin-top:10px;">
+      <div class="row" style="margin-top:10px;flex-wrap:wrap;">
         <select id="habitFreqType">
           <option value="daily" ${habitFreqType==='daily'?'selected':''}>每天</option>
           <option value="weekly" ${habitFreqType==='weekly'?'selected':''}>每周指定几天</option>
+          <option value="weeklyCount" ${habitFreqType==='weeklyCount'?'selected':''}>每周完成 N 次</option>
         </select>
+        ${habitFreqType==='weeklyCount'?`<select id="habitWeeklyTarget">${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${n===habitWeeklyTarget?'selected':''}>每周 ${n} 次</option>`).join('')}</select>`:''}
         <button class="add-btn" id="addHabitBtn" style="margin-left:auto;">添加习惯</button>
       </div>
       <div class="weekday-picker" id="weekdayPicker" style="display:${habitFreqType==='weekly'?'flex':'none'};">
@@ -784,30 +1043,17 @@ function renderHabits(){
     </div>
 
     <div id="habitList">
-      ${habits.length===0 ? `<div class="empty">还没有习惯，添加一个开始打卡吧</div>` : habits.map(h=>{
-        const { current, best } = computeStreak(h);
-        const due = isHabitDue(h, today);
-        const checkedToday = !!h.checkins[today];
-        return `
-        <div class="habit-card" data-id="${h.id}">
-          <div class="habit-top">
-            <span class="habit-dot" style="background:${h.color};"></span>
-            <div style="flex:1;min-width:0;">
-              <div class="habit-name">${escapeHtml(h.name)}</div>
-              <div class="habit-freq">${freqLabel(h)}</div>
-            </div>
-            <span class="habit-streak" style="color:${h.color};">🔥 ${current}</span>
-            <button class="checkin-btn ${checkedToday?'done':''}" data-act="checkin" ${due?'':'style="opacity:.35;"'}>${checkedToday?'✔':''}</button>
-            <button class="habit-del" data-act="delete">🗑</button>
-          </div>
-          ${habitHeatYear[h.id] ? `<div class="heatmap-year">${yearHeatmap(h)}</div>` : `<div class="heatmap">${monthHeatmap(h)}</div>`}
-          <div class="habit-stats">
-            <span>当前连续 ${current} 天</span>
-            <span>最长连续 ${best} 天</span>
-            <button data-act="toggleHeat" style="margin-left:auto;font-size:11px;color:${h.color};">${habitHeatYear[h.id]?'看本月':'看全年'}</button>
-          </div>
-        </div>`;
-      }).join('')}
+      ${habits.length===0 ? `<div class="empty">还没有习惯，添加一个开始打卡吧</div>` : habits.map(h=>habitCardHtml(h,today)).join('')}
+    </div>
+
+    <div class="box" style="margin-top:22px;">
+      <div style="font-size:13.5px;font-weight:600;">今日随笔 <span class="mono" style="color:var(--faint);font-weight:400;font-size:11px;">${today}</span></div>
+      <div class="mood-row" style="margin-top:10px;">
+        ${MOODS.map(m=>`<button data-mood="${m}" class="${journal[today]?.mood===m?'active':''}">${m}</button>`).join('')}
+      </div>
+      <textarea id="journalText" placeholder="此刻的心情、今天想记下的小事…">${escapeHtml(journal[today]?.text||'')}</textarea>
+      ${pastEntries.length?`<div style="margin-top:12px;">${pastEntries.map(([d,e])=>`
+        <div class="journal-entry"><div class="jd mono">${d} ${e.mood||''}</div>${escapeHtml(e.text||'')}</div>`).join('')}</div>`:''}
     </div>
   `;
 
@@ -815,6 +1061,7 @@ function renderHabits(){
     habitFreqType = e.target.value;
     renderHabits();
   });
+  el.querySelector('#habitWeeklyTarget')?.addEventListener('change', e=>{ habitWeeklyTarget = parseInt(e.target.value,10); });
   el.querySelectorAll('#weekdayPicker button').forEach(b=>b.addEventListener('click',()=>{
     const day = parseInt(b.dataset.day,10);
     if(habitSelectedDays.includes(day)) habitSelectedDays = habitSelectedDays.filter(d=>d!==day);
@@ -830,8 +1077,38 @@ function renderHabits(){
     const h = habits.find(x=>x.id===id);
     const act = e.target.dataset.act;
     if(act==='checkin'){
-      if(h.checkins[today]) delete h.checkins[today];
+      if(isChecked(h, today)) delete h.checkins[today];
       else h.checkins[today] = true;
+      persistHabits(); renderHabits();
+      if(isChecked(h, today) && h.reward){
+        const mp = monthProgress(h);
+        if(mp.due>0 && mp.done>=mp.due) toast(`🎁 本月达成！奖励自己：${h.reward}`);
+      }
+      return;
+    }
+    if(act==='toggleSubHabit' || act==='delSubHabit'){
+      const sid = e.target.dataset.sid;
+      if(act==='delSubHabit'){
+        h.subHabits = (h.subHabits||[]).filter(s=>s.id!==sid);
+      }else{
+        const subs = h.subHabits||[];
+        const c = h.checkins[today];
+        let arr = c===true ? subs.map(s=>s.id) : Array.isArray(c) ? [...c] : [];
+        arr = arr.includes(sid) ? arr.filter(x=>x!==sid) : [...arr, sid];
+        if(arr.length===0) delete h.checkins[today]; else h.checkins[today] = arr;
+      }
+      persistHabits(); renderHabits(); return;
+    }
+    if(act==='addSubHabit'){
+      const name = (prompt('小习惯名称，比如「早餐」「午餐」')||'').trim();
+      if(!name) return;
+      (h.subHabits = h.subHabits||[]).push({id:uid(), name});
+      persistHabits(); renderHabits(); return;
+    }
+    if(act==='setReward'){
+      const v = prompt('这个月坚持下来，给自己什么奖励？(留空清除)', h.reward||'');
+      if(v===null) return;
+      h.reward = v.trim();
       persistHabits(); renderHabits(); return;
     }
     if(act==='toggleHeat'){
@@ -844,6 +1121,18 @@ function renderHabits(){
       persistHabits(); renderHabits(); return;
     }
   });
+  el.querySelectorAll('.mood-row button').forEach(b=>b.addEventListener('click',()=>{
+    const cur = journal[today]||{};
+    cur.mood = cur.mood===b.dataset.mood ? '' : b.dataset.mood;
+    journal[today] = cur;
+    persistJournal(); renderHabits();
+  }));
+  el.querySelector('#journalText').addEventListener('change', e=>{
+    const cur = journal[today]||{};
+    cur.text = e.target.value.trim();
+    journal[today] = cur;
+    persistJournal();
+  });
 }
 
 function addHabit(){
@@ -853,7 +1142,9 @@ function addHabit(){
   if(habitFreqType==='weekly' && habitSelectedDays.length===0){ alert('每周习惯至少选一天'); return; }
   const color = HABIT_COLORS[habits.length % HABIT_COLORS.length];
   const days = habitFreqType==='weekly' ? [...habitSelectedDays] : [0,1,2,3,4,5,6];
-  habits.unshift({ id:uid(), name, color, freqType:habitFreqType, days, checkins:{}, createdAt:Date.now() });
+  const habit = { id:uid(), name, color, freqType:habitFreqType, days, checkins:{}, subHabits:[], createdAt:Date.now() };
+  if(habitFreqType==='weeklyCount') habit.weeklyTarget = habitWeeklyTarget;
+  habits.unshift(habit);
   persistHabits();
   renderHabits();
   document.getElementById('habitName').focus();
@@ -1258,7 +1549,9 @@ function renderOverview(){
   const gadgetsTotal = gadgets.reduce((s,g)=>s+g.price,0);
   const gadgetsCount = gadgets.length;
   const dueHabitsToday = habits.filter(h=>isHabitDue(h, today));
-  const doneHabitsToday = dueHabitsToday.filter(h=>h.checkins[today]).length;
+  const doneHabitsToday = dueHabitsToday.filter(h=>isChecked(h, today)).length;
+  const last14 = [];
+  for(let i=13;i>=0;i--){ const d = new Date(); d.setDate(d.getDate()-i); last14.push(localDateStr(d)); }
 
   el.innerHTML = `
     <h1 class="serif">总览</h1>
@@ -1272,6 +1565,41 @@ function renderOverview(){
       </div>
       ${dueHabitsToday.length>0?`<div class="body" style="margin-top:4px;"><span>习惯打卡 ${doneHabitsToday}/${dueHabitsToday.length}</span><span></span></div>`:''}
     </div>
+
+    <div class="card chart-card" id="todayGlance">
+      <h3>今日速览</h3>
+      <div class="glance-sec">待办 · ${todayDone}/${todayTasks.length}</div>
+      ${todayTasks.length? todayTasks.map(t=>`
+        <button class="glance-row" data-act="ovTask" data-id="${t.id}">
+          <span class="gc" style="color:${t.completed?'var(--income)':'var(--faint)'};">${t.completed?'✔':'○'}</span>
+          <span class="gt ${t.completed?'done':''}">${escapeHtml(t.title)}</span>
+          ${t.dueDate && daysFromToday(t.dueDate)<0?`<span style="font-size:11px;color:var(--expense);flex-shrink:0;">逾期</span>`:''}
+        </button>`).join('') : `<div style="font-size:12.5px;color:var(--faint);padding:6px 0;">今天没有到期的任务</div>`}
+      <div class="glance-sec" style="margin-top:14px;">习惯 · ${doneHabitsToday}/${dueHabitsToday.length}</div>
+      ${dueHabitsToday.length? dueHabitsToday.map(h=>{
+        const done = isChecked(h, today);
+        return `
+        <button class="glance-row" data-act="ovHabit" data-id="${h.id}">
+          <span class="gc" style="color:${done?'var(--habit)':'var(--faint)'};">${done?'✔':'○'}</span>
+          <span class="gt">${escapeHtml(h.name)}</span>
+          ${h.freqType==='weeklyCount'?`<span style="font-size:11px;color:var(--muted);flex-shrink:0;">本周 ${countThisWeek(h)}/${h.weeklyTarget||3}</span>`:''}
+        </button>`;}).join('') : `<div style="font-size:12.5px;color:var(--faint);padding:6px 0;">还没有要打卡的习惯</div>`}
+    </div>
+
+    ${habits.length?`
+    <div class="card chart-card">
+      <h3>习惯总图 · 近 14 天</h3>
+      <div class="ovgrid" style="grid-template-columns:minmax(56px,auto) repeat(14,minmax(10px,1fr)) auto;">
+        <span></span>
+        ${last14.map(k=>`<span style="font-size:9px;color:var(--faint);text-align:center;">${parseInt(k.slice(8),10)}</span>`).join('')}
+        <span style="font-size:10px;">🔥</span>
+        ${habits.map(h=>`
+          <span class="hn">${escapeHtml(h.name)}</span>
+          ${last14.map(k=>`<span class="cell" title="${k}" style="${isChecked(h,k)?`background:${h.color};`:''}"></span>`).join('')}
+          <span class="mono" style="font-size:11px;color:${h.color};">${computeStreak(h).current}</span>
+        `).join('')}
+      </div>
+    </div>`:''}
 
     <div class="grid2">
       <div class="card">
@@ -1359,8 +1687,24 @@ function renderOverview(){
   });
   el.querySelector('#syncNowBtn')?.addEventListener('click', async e=>{
     e.target.textContent = '同步中…';
-    await syncNow();
+    const ok = await syncNow();
     renderOverview();
+    toast(ok ? '✅ 同步成功' : '⚠️ 同步失败，检查网络后再试');
+  });
+  el.querySelector('#todayGlance').addEventListener('click', e=>{
+    const row = e.target.closest('[data-act]');
+    if(!row) return;
+    if(row.dataset.act==='ovTask'){
+      const t = tasks.find(x=>x.id===row.dataset.id);
+      t.completed = !t.completed;
+      persistTasks(); renderOverview();
+    }
+    if(row.dataset.act==='ovHabit'){
+      const h = habits.find(x=>x.id===row.dataset.id);
+      if(isChecked(h, today)) delete h.checkins[today];
+      else h.checkins[today] = true;
+      persistHabits(); renderOverview();
+    }
   });
   el.querySelector('#logoutBtn')?.addEventListener('click', ()=>{
     if(!confirm('退出登录？本机数据保留，只是不再同步')) return;
@@ -1412,7 +1756,7 @@ function renderOverview(){
 
 /* ---------------- backup ---------------- */
 function exportData(){
-  const blob = new Blob([JSON.stringify({version:1, tasks, txns, habits, gadgets, customCats, budget}, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({version:1, tasks, txns, habits, gadgets, customCats, budget, journal}, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `liji-backup-${todayStr()}.json`;
@@ -1430,6 +1774,7 @@ async function importData(e){
     tasks = data.tasks; txns = data.txns; habits = data.habits; gadgets = data.gadgets;
     if(data.customCats){ customCats = data.customCats; saveKey('shiji-custom-cats', customCats); }
     if(typeof data.budget==='number'){ budget = data.budget; saveKey('shiji-budget', budget); }
+    if(data.journal && typeof data.journal==='object'){ journal = data.journal; persistJournal(); }
     persistTasks(); persistTxns(); persistHabits(); persistGadgets();
     renderOverview();
     alert('导入成功');
@@ -1446,6 +1791,7 @@ async function loadAll(){
   gadgets = await loadKey('shiji-gadgets', []);
   customCats = await loadKey('shiji-custom-cats', {expense:[], income:[]});
   budget = await loadKey('shiji-budget', 0);
+  journal = await loadKey('shiji-journal', {});
   habits.forEach(h=>{ if(OLD_HABIT_COLORS[h.color]) h.color = OLD_HABIT_COLORS[h.color]; });
 }
 async function init(){
