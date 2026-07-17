@@ -582,7 +582,7 @@ function taskCardHtml(t){
     </div>
     <div class="task-expand ${expanded?'open':''}">
       <div class="row">
-        <input type="text" data-act="editTitle" value="${escapeHtml(t.title)}" style="flex:1;border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:13px;background:var(--card);color:inherit;" />
+        <form style="display:contents;"><input type="text" data-act="editTitle" value="${escapeHtml(t.title)}" style="flex:1;border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:13px;background:var(--card);color:inherit;" /></form>
       </div>
       <div class="row">
         <select data-act="setList">${LISTS.map(l=>`<option value="${l.id}" ${l.id===t.listId?'selected':''}>${l.name}</option>`).join('')}</select>
@@ -603,7 +603,7 @@ function taskCardHtml(t){
           </div>`).join('')}
         <div class="sub-add">
           <span style="color:var(--muted);">＋</span>
-          <input type="text" data-act="newSub" placeholder="添加子任务" />
+          <form style="display:contents;"><input type="text" data-act="newSub" placeholder="添加子任务" /></form>
         </div>
       </div>
     </div>
@@ -612,11 +612,14 @@ function taskCardHtml(t){
 
 function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-// 手机输入法按回车时 keydown 常报 'Unidentified'(keyCode 229),用 beforeinput 的 insertLineBreak 兜底;
-// 两个事件都触发也没事,fn 里输入框已被清空/重渲染会直接 return
+// 手机输入法回车时 keydown 常报 'Unidentified'(keyCode 229),beforeinput 的 insertLineBreak 在单行 input 上也不触发;
+// 唯一可靠的是表单提交:输入法的"前往/完成"键必定触发 submit,桌面回车走隐式提交,同一条路
 function onEnter(input, fn){
-  input.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.isComposing) fn(); });
-  input.addEventListener('beforeinput', e=>{ if(e.inputType==='insertLineBreak'){ e.preventDefault(); fn(); } });
+  const form = document.createElement('form');
+  form.style.display = 'contents';
+  input.replaceWith(form);
+  form.appendChild(input);
+  form.addEventListener('submit', e=>{ e.preventDefault(); fn(); });
 }
 
 function addTask(){
@@ -662,13 +665,11 @@ function handleTaskListClick(e){
     persistTasks(); renderTasks(); return;
   }
 }
-// subtask add / title edit via Enter key (delegated, needs separate listener since input events not click)
-// 和 onEnter 同理:手机输入法 keydown 报不出 Enter,用 beforeinput insertLineBreak 兜底
-document.addEventListener('keydown', e=>{
-  if(e.key==='Enter' && !e.isComposing) handleDelegatedEnter(e.target);
-});
-document.addEventListener('beforeinput', e=>{
-  if(e.inputType==='insertLineBreak'){ e.preventDefault(); handleDelegatedEnter(e.target); }
+// subtask add / title edit:动态渲染的输入框各自包在 <form> 里,委托监听 submit(和 onEnter 同理,兼容手机输入法)
+document.addEventListener('submit', e=>{
+  e.preventDefault();
+  const input = e.target.querySelector('input');
+  if(input) handleDelegatedEnter(input);
 });
 function handleDelegatedEnter(target){
   if(!target.dataset) return;
