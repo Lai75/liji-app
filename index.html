@@ -520,7 +520,7 @@ function renderTasks(){
   el.querySelectorAll('#listchips .chip').forEach(b=>b.addEventListener('click',()=>{taskList=b.dataset.list;renderTasks();}));
   el.querySelectorAll('.filtertabs button').forEach(b=>b.addEventListener('click',()=>{taskFilter=b.dataset.f;renderTasks();}));
   const qi = el.querySelector('#quickTitle');
-  qi.addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
+  onEnter(qi, addTask);
   const listEl = el.querySelector('#taskList');
   // ponytail: HTML5 DnD 只支持桌面鼠标,手机触屏拖不动;需要时换 pointer events 实现
   let dragId = null;
@@ -612,6 +612,13 @@ function taskCardHtml(t){
 
 function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+// 手机输入法按回车时 keydown 常报 'Unidentified'(keyCode 229),用 beforeinput 的 insertLineBreak 兜底;
+// 两个事件都触发也没事,fn 里输入框已被清空/重渲染会直接 return
+function onEnter(input, fn){
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.isComposing) fn(); });
+  input.addEventListener('beforeinput', e=>{ if(e.inputType==='insertLineBreak'){ e.preventDefault(); fn(); } });
+}
+
 function addTask(){
   const input = document.getElementById('quickTitle');
   const title = input.value.trim();
@@ -656,21 +663,28 @@ function handleTaskListClick(e){
   }
 }
 // subtask add / title edit via Enter key (delegated, needs separate listener since input events not click)
+// 和 onEnter 同理:手机输入法 keydown 报不出 Enter,用 beforeinput insertLineBreak 兜底
 document.addEventListener('keydown', e=>{
-  if(!e.target.dataset || e.key!=='Enter') return;
-  if(e.target.dataset.act==='editTitle'){ e.target.blur(); return; }
-  if(e.target.dataset.act==='newSub'){
-    const card = e.target.closest('.task-card');
+  if(e.key==='Enter' && !e.isComposing) handleDelegatedEnter(e.target);
+});
+document.addEventListener('beforeinput', e=>{
+  if(e.inputType==='insertLineBreak'){ e.preventDefault(); handleDelegatedEnter(e.target); }
+});
+function handleDelegatedEnter(target){
+  if(!target.dataset) return;
+  if(target.dataset.act==='editTitle'){ target.blur(); return; }
+  if(target.dataset.act==='newSub'){
+    const card = target.closest('.task-card');
     const id = card.dataset.id;
     const t = tasks.find(x=>x.id===id);
-    const title = e.target.value.trim();
+    const title = target.value.trim();
     if(!title) return;
     t.subtasks.push({id:uid(),title,done:false});
     persistTasks();
     renderTasks();
     document.querySelector(`.task-card[data-id="${id}"] input[data-act=newSub]`)?.focus();
   }
-});
+}
 
 /* ================= HABITS ================= */
 function isHabitDue(habit, dateStr){
@@ -806,7 +820,7 @@ function renderHabits(){
     else habitSelectedDays = [...habitSelectedDays, day];
     renderHabits();
   }));
-  el.querySelector('#habitName').addEventListener('keydown', e=>{ if(e.key==='Enter') addHabit(); });
+  onEnter(el.querySelector('#habitName'), addHabit);
   el.querySelector('#addHabitBtn').addEventListener('click', addHabit);
   el.querySelector('#habitList').addEventListener('click', e=>{
     const card = e.target.closest('.habit-card');
@@ -992,7 +1006,7 @@ function renderLedger(){
   el.querySelector('#nextMonth').addEventListener('click',()=>shiftMonth(1));
   el.querySelector('#addTxnBtn').addEventListener('click', addTxn);
   el.querySelector('#amountInput').addEventListener('input', e=>{ e.target.value = e.target.value.replace(/[^0-9.]/g,''); });
-  el.querySelector('#noteInput').addEventListener('keydown', e=>{ if(e.key==='Enter') addTxn(); });
+  onEnter(el.querySelector('#noteInput'), addTxn);
   const cancelBtn = el.querySelector('#cancelTxnEdit');
   if(cancelBtn) cancelBtn.addEventListener('click',()=>{
     editingTxn=null;
@@ -1122,7 +1136,7 @@ function renderGadgets(){
 
   el.querySelector('#gadgetCatSelect').addEventListener('change', e=>{ gadgetFormCat = e.target.value; });
   el.querySelector('#gadgetPrice').addEventListener('input', e=>{ e.target.value = e.target.value.replace(/[^0-9.]/g,''); });
-  el.querySelector('#gadgetName').addEventListener('keydown', e=>{ if(e.key==='Enter') addGadget(); });
+  onEnter(el.querySelector('#gadgetName'), addGadget);
   el.querySelectorAll('#channelchips .chip').forEach(b=>b.addEventListener('click',()=>{ gadgetFormChannel=b.dataset.channel; renderGadgets(); }));
   el.querySelector('#addGadgetBtn').addEventListener('click', addGadget);
   el.querySelectorAll('#gadgetFilterChips .chip').forEach(b=>b.addEventListener('click',()=>{ gadgetFilter=b.dataset.filter; renderGadgets(); }));
