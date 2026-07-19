@@ -241,7 +241,7 @@ function renderOverview(){
 
 /* ---------------- backup ---------------- */
 function exportData(){
-  const blob = new Blob([JSON.stringify({version:1, tasks, txns, habits, gadgets, customCats, budget, journal}, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({version:1, tasks, txns, habits, gadgets, customCats, budget, journal, recurring}, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `liji-backup-${todayStr()}.json`;
@@ -260,6 +260,7 @@ async function importData(e){
     if(data.customCats){ customCats = data.customCats; saveKey('shiji-custom-cats', customCats); }
     if(typeof data.budget==='number'){ budget = data.budget; saveKey('shiji-budget', budget); }
     if(data.journal && typeof data.journal==='object'){ journal = data.journal; persistJournal(); }
+    if(Array.isArray(data.recurring)){ recurring = data.recurring; persistRecurring(); }
     persistTasks(); persistTxns(); persistHabits(); persistGadgets();
     renderOverview();
     alert('导入成功');

@@ -1,6 +1,64 @@
 /* ================= LEDGER ================= */
 function monthKey(d){ return d.slice(0,7); }
 
+/* 定期账单:每月 day 日自动补记。id 用 rec-<规则id>-<年月> 确定性生成,
+   两台设备同月各补一笔时同步合并按 id 去重;去重集合读 localStorage 原始数据(含墓碑),
+   手动删掉的那笔留有墓碑,不会被补回来 */
+function applyRecurring(){
+  if(!recurring.length) return;
+  let raw; try{ raw = JSON.parse(localStorage.getItem('shiji-transactions')) || []; }catch(e){ raw = []; }
+  const seen = new Set(raw.map(t=>t.id));
+  const today = todayStr();
+  const [ty,tm] = today.slice(0,7).split('-').map(Number);
+  let added = 0, advanced = false;
+  for(const r of recurring){
+    let [y,m] = (r.lastPosted || r.start.slice(0,7)).split('-').map(Number);
+    if(r.lastPosted){ m++; if(m>12){ m=1; y++; } }
+    while(y<ty || (y===ty && m<=tm)){
+      const mk = `${y}-${String(m).padStart(2,'0')}`;
+      const lastDay = new Date(y, m, 0).getDate(); // 31 号在小月自动收到月底
+      const date = `${mk}-${String(Math.min(r.day,lastDay)).padStart(2,'0')}`;
+      if(date > today) break; // 本月还没到日子,lastPosted 不动,到日子那天再补
+      const id = `rec-${r.id}-${mk}`;
+      if(date >= r.start && !seen.has(id)){
+        txns.unshift({id, type:r.type, amount:r.amount, category:r.category, note:r.note, date});
+        seen.add(id); added++;
+      }
+      r.lastPosted = mk; advanced = true;
+      m++; if(m>12){ m=1; y++; }
+    }
+  }
+  if(advanced) persistRecurring();
+  if(added){ persistTxns(); toast(`⟳ 已自动记入 ${added} 笔定期账单`); }
+}
+
+function addRecurring(){
+  const val = parseFloat(document.getElementById('amountInput').value);
+  if(!val || val<=0){ toast('先在上面填好金额和分类,再设为定期'); return; }
+  const d = parseInt(prompt('每月几号自动记这笔账?(1-31,31 在小月自动算月底)', new Date().getDate()), 10);
+  if(!d || d<1 || d>31) return;
+  recurring.push({id:uid(), type:ledgerType, amount:val, category:ledgerCategory,
+    note:document.getElementById('noteInput').value.trim(), day:d, start:todayStr()});
+  persistRecurring();
+  document.getElementById('amountInput').value=''; document.getElementById('noteInput').value='';
+  applyRecurring();
+  renderLedger();
+  toast(`已设定期:每月 ${d} 日自动记账`);
+}
+
+function exportLedgerCsv(){
+  const rows = [['日期','类型','分类','金额(RM)','备注'],
+    ...txns.slice().sort((a,b)=> a.date<b.date?1:-1)
+      .map(t=>[t.date, t.type==='expense'?'支出':'收入', t.category, t.amount, t.note||''])];
+  // BOM 让 Excel 认出 UTF-8,中文才不乱码
+  const csv = String.fromCharCode(0xFEFF)+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download = `liji-账单-${todayStr()}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 // 汇总/预算/小计/账单列表这一段会被搜索输入单独重绘(不动输入框,焦点不丢)
 function ledgerBodyHtml(){
   const kw = ledgerSearch.trim().toLowerCase();
@@ -110,13 +168,27 @@ function renderLedger(){
       <div class="row note-row">
         <input type="text" id="noteInput" placeholder="备注（可选）" />
         ${editingTxn?`<button id="cancelTxnEdit" style="font-size:12px;color:var(--muted);flex-shrink:0;">取消</button>`:''}
+        ${editingTxn?'':`<button id="recBtn" title="把上面填好的这笔设为每月自动记账" style="font-size:12px;color:var(--muted);flex-shrink:0;">⟳ 定期</button>`}
         <button class="add-btn" id="addTxnBtn">${editingTxn?'保存修改':'记一笔'}</button>
       </div>
     </div>
 
+    ${recurring.length?`
+    <div class="box" id="recList" style="padding:10px 12px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">⟳ 定期账单 · 每月自动记</div>
+      ${recurring.map(r=>`
+        <div class="row" style="justify-content:space-between;font-size:12px;padding:3px 0;gap:8px;">
+          <span style="color:var(--ink-soft);">每月 ${r.day} 日 · ${escapeHtml(r.category)}${r.note?` · ${escapeHtml(r.note)}`:''}</span>
+          <span class="mono" style="color:${r.type==='expense'?'var(--expense)':'var(--income)'};flex-shrink:0;">${r.type==='expense'?'-':'+'}${fmtMoney(r.amount)}
+            <button data-rmrec="${r.id}" title="停止这条定期(已记的账不受影响)" style="color:var(--faint);padding:2px 6px;">✕</button>
+          </span>
+        </div>`).join('')}
+    </div>`:''}
+
     <div class="row" style="margin-bottom:12px;">
       <input type="search" id="searchInput" placeholder="🔍 搜索备注或分类（跨所有月份）" value="${escapeHtml(ledgerSearch)}"
         style="flex:1;border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:13px;outline:none;background:var(--card);color:inherit;" />
+      <button id="csvBtn" title="导出全部账单为 CSV（Excel 可直接打开）" style="font-size:12px;color:var(--muted);flex-shrink:0;border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--card);">⤓ CSV</button>
     </div>
 
     <div class="monthnav" id="monthnav" style="${ledgerSearch.trim()?'display:none;':''}">
@@ -145,6 +217,12 @@ function renderLedger(){
   el.querySelector('#prevMonth').addEventListener('click',()=>shiftMonth(-1));
   el.querySelector('#nextMonth').addEventListener('click',()=>shiftMonth(1));
   el.querySelector('#addTxnBtn').addEventListener('click', addTxn);
+  el.querySelector('#recBtn')?.addEventListener('click', addRecurring);
+  el.querySelector('#csvBtn').addEventListener('click', exportLedgerCsv);
+  el.querySelector('#recList')?.addEventListener('click', e=>{
+    const id = e.target.dataset.rmrec;
+    if(id) removeWithUndo(()=>recurring, id, persistRecurring, renderLedger, '定期账单');
+  });
   el.querySelector('#amountInput').addEventListener('input', e=>{ e.target.value = e.target.value.replace(/[^0-9.]/g,''); });
   onEnter(el.querySelector('#noteInput'), addTxn);
   const cancelBtn = el.querySelector('#cancelTxnEdit');

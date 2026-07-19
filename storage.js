@@ -45,6 +45,7 @@ let gadgets = [];
 let editingTxn = null;
 let editingGadget = null;
 let customCats = {expense:[], income:[]};
+let recurring = []; // 定期账单规则 {id,type,amount,category,note,day,start,lastPosted}
 let ledgerSearch = '';
 let budget = 0;
 let habitHeatYear = {}; // id -> 是否显示年视图(会话内有效即可,不持久化)
@@ -147,6 +148,7 @@ async function persistTxns(){ await saveKey('shiji-transactions', txns); }
 async function persistHabits(){ await saveKey('shiji-habits', habits); }
 async function persistGadgets(){ await saveKey('shiji-gadgets', gadgets); }
 async function persistJournal(){ await saveKey('shiji-journal', journal); }
+async function persistRecurring(){ await saveKey('shiji-recurring', recurring); }
 
 async function loadAll(){
   tasks = await loadKey('shiji-tasks', []);
@@ -156,5 +158,6 @@ async function loadAll(){
   customCats = await loadKey('shiji-custom-cats', {expense:[], income:[]});
   budget = await loadKey('shiji-budget', 0);
   journal = await loadKey('shiji-journal', {});
+  recurring = await loadKey('shiji-recurring', []);
   habits.forEach(h=>{ if(OLD_HABIT_COLORS[h.color]) h.color = OLD_HABIT_COLORS[h.color]; });
 }

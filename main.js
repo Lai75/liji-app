@@ -40,6 +40,7 @@ document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=
 
 async function init(){
   await loadAll();
+  applyRecurring(); // 定期账单:把打开期间错过的月份补上
   // 请求持久存储,降低浏览器空间紧张时自动清掉数据的概率
   navigator.storage?.persist?.().catch(()=>{});
   setTab('tasks');
@@ -51,7 +52,7 @@ init();
 let lastDay = todayStr();
 document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState!=='visible') return;
-  if(todayStr()!==lastDay){ lastDay = todayStr(); setTab(activeTab); }
+  if(todayStr()!==lastDay){ lastDay = todayStr(); applyRecurring(); setTab(activeTab); }
   syncNow();
 });
 
