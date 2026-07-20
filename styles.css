@@ -79,6 +79,7 @@
   .row{display:flex;align-items:center;gap:8px;}
   .quickadd input[type=text]{flex:1;border:none;outline:none;background:transparent;font-size:15px;}
   .quickadd select{font-size:13px;background:var(--soft);color:var(--ink-soft);border:none;border-radius:8px;padding:6px 8px;}
+  .quickadd input[type=date]{font-size:13px;background:var(--soft);color:var(--ink-soft);border:none;border-radius:8px;padding:6px 8px;max-width:126px;}
 
   /* filter tabs */
   .filtertabs{display:flex;gap:18px;border-bottom:1px solid var(--line);margin-bottom:14px;font-size:14px;}

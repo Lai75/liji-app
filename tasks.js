@@ -28,6 +28,7 @@ function renderTasks(){
       <div class="row">
         <span style="color:var(--gold);">＋</span>
         <input type="text" id="quickTitle" placeholder="添加一件事，回车即可" />
+        <input type="date" id="quickDue" title="截止日期" />
         <select id="quickList">
           ${LISTS.map(l=>`<option value="${l.id}">${l.name}</option>`).join('')}
         </select>
@@ -139,6 +140,9 @@ function renderTaskCalendar(el){
       <div class="sub-add">
         <span style="color:var(--gold);">＋</span>
         <input type="text" id="calQuickTitle" placeholder="添加任务到这一天，回车即可" />
+        <select id="calQuickList" style="font-size:12.5px;border:1px solid var(--line);border-radius:8px;padding:4px 6px;background:var(--card);color:inherit;">
+          ${LISTS.map(l=>`<option value="${l.id}">${l.name}</option>`).join('')}
+        </select>
       </div>
       ${unscheduled.length?`
       <div class="row" style="margin-top:10px;">
@@ -169,7 +173,8 @@ function renderTaskCalendar(el){
     const input = document.getElementById('calQuickTitle');
     const title = input.value.trim();
     if(!title) return;
-    tasks.unshift({id:uid(),title,listId:'inbox',priority:'none',dueDate:calSelected,completed:false,subtasks:[],createdAt:Date.now()});
+    const listId = document.getElementById('calQuickList').value;
+    tasks.unshift({id:uid(),title,listId,priority:'none',dueDate:calSelected,completed:false,subtasks:[],createdAt:Date.now()});
     persistTasks(); renderTasks();
     document.getElementById('calQuickTitle').focus();
   });
@@ -244,7 +249,8 @@ function addTask(){
   const title = input.value.trim();
   if(!title) return;
   const listId = document.getElementById('quickList').value;
-  tasks.unshift({id:uid(),title,listId,priority:'none',dueDate:'',completed:false,subtasks:[],createdAt:Date.now()});
+  const dueDate = document.getElementById('quickDue').value;
+  tasks.unshift({id:uid(),title,listId,priority:'none',dueDate,completed:false,subtasks:[],createdAt:Date.now()});
   persistTasks();
   renderTasks();
   document.getElementById('quickTitle').focus();

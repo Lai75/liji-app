@@ -4,6 +4,8 @@ function renderOverview(){
   const hasChart = typeof Chart !== 'undefined'; // 本地 chart.umd.min.js 加载失败时降级为文本
   const today = todayStr();
   const todayTasks = tasks.filter(t=> t.dueDate===today || (!t.completed && t.dueDate && daysFromToday(t.dueDate)<0));
+  const upcomingTasks = tasks.filter(t=> !t.completed && t.dueDate && daysFromToday(t.dueDate)>0 && daysFromToday(t.dueDate)<=7)
+    .sort((a,b)=> a.dueDate<b.dueDate ? -1 : 1);
   const todayDone = todayTasks.filter(t=>t.completed).length;
   const todayTxns = txns.filter(t=>t.date===today);
   const todayNet = todayTxns.reduce((s,t)=> s + (t.type==='income'?t.amount:-t.amount),0);
@@ -60,6 +62,12 @@ function renderOverview(){
           <span class="gt ${t.completed?'done':''}">${escapeHtml(t.title)}</span>
           ${t.dueDate && daysFromToday(t.dueDate)<0?`<span style="font-size:11px;color:var(--expense);flex-shrink:0;">逾期</span>`:''}
         </button>`).join('') : `<div style="font-size:12.5px;color:var(--faint);padding:6px 0;">今天没有到期的任务</div>`}
+      ${upcomingTasks.length?`<div class="glance-sec" style="margin-top:14px;">近期截止</div>`+upcomingTasks.map(t=>`
+        <button class="glance-row" data-act="ovTask" data-id="${t.id}">
+          <span class="gc" style="color:var(--faint);">○</span>
+          <span class="gt">${escapeHtml(t.title)}</span>
+          <span style="font-size:11px;color:var(--muted);flex-shrink:0;">🗓 ${dueLabel(t.dueDate).text}</span>
+        </button>`).join(''):''}
       <div class="glance-sec" style="margin-top:14px;">习惯 · ${doneHabitsToday}/${dueHabitsToday.length}</div>
       ${dueHabitsToday.length? dueHabitsToday.map(h=>{
         const done = isChecked(h, today);
