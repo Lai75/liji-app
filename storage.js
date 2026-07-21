@@ -69,7 +69,12 @@ let ledgerCategory = EXPENSE_CATS[0];
 let pieChart=null, barChart=null;
 
 const uid = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36);
-const fmtMoney = n => (Math.round(n*100)/100).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
+let moneyHidden = localStorage.getItem('shiji-money-hidden')==='1'; // 长按总览标题切换,隐藏金额防偷窥
+function toggleMoneyHidden(){
+  moneyHidden = !moneyHidden;
+  localStorage.setItem('shiji-money-hidden', moneyHidden?'1':'0');
+}
+const fmtMoney = n => moneyHidden ? '••••' : (Math.round(n*100)/100).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
 function daysFromToday(dateStr){
   if(!dateStr) return null;
   const d=new Date(dateStr+'T00:00:00'), t=new Date(todayStr()+'T00:00:00');

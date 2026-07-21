@@ -41,7 +41,7 @@ function renderOverview(){
   for(let i=13;i>=0;i--){ const d = new Date(); d.setDate(d.getDate()-i); last14.push(localDateStr(d)); }
 
   el.innerHTML = `
-    <h1 class="serif">总览</h1>
+    <h1 class="serif" id="ovTitle" style="user-select:none;">总览</h1>
     <div class="sub">今天的进度与花销，一眼看清</div>
 
     <div class="ticket mono">
@@ -152,6 +152,14 @@ function renderOverview(){
       <div class="s" style="font-size:11px;color:var(--muted);margin-top:8px;">数据只存在浏览器本地,清缓存会丢失,建议定期导出备份</div>
     </div>
   `;
+
+  let ovPressTimer = null;
+  const ovTitle = el.querySelector('#ovTitle');
+  const startOvPress = () => { ovPressTimer = setTimeout(()=>{ toggleMoneyHidden(); renderOverview(); toast(moneyHidden?'🙈 已隐藏金额':'👀 已显示金额'); }, 600); };
+  const cancelOvPress = () => clearTimeout(ovPressTimer);
+  ovTitle.addEventListener('mousedown', startOvPress);
+  ovTitle.addEventListener('touchstart', startOvPress, {passive:true});
+  ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>ovTitle.addEventListener(ev, cancelOvPress));
 
   const syncMsg = t => { const m = el.querySelector('#syncMsg'); if(m) m.textContent = t; };
   el.querySelector('#loginBtn')?.addEventListener('click', async ()=>{
