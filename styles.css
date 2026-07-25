@@ -177,6 +177,8 @@
   .heatmap-year{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,10px);grid-auto-columns:10px;gap:3px;margin-top:14px;overflow-x:auto;padding-bottom:4px;}
   .heatmap-year .cell{width:10px;height:10px;border-radius:2px;background:var(--soft-line);}
   .heatmap-year .cell.checked{background:var(--habit);}
+  .heatmap .cell[data-act],.heatmap-year .cell[data-act]{cursor:pointer;}
+  .cell.has-note{box-shadow:inset 0 0 0 1.5px var(--gold);}
   .habit-stats{display:flex;gap:14px;margin-top:12px;font-size:11px;color:var(--muted);}
   .habit-subs{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
   .habit-sub{font-size:12px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:var(--soft);color:var(--muted);display:flex;align-items:center;gap:5px;}

@@ -60,6 +60,8 @@ function monthProgress(habit){
   if(habit.freqType==='weeklyCount') due = Math.round((habit.weeklyTarget||3)*dim/7);
   return { done, due };
 }
+// 每个自然月最多 2 次漏打卡不清零(护盾),按日期动态算,不占存储
+const STREAK_GRACE_PER_MONTH = 2;
 function computeStreak(habit){
   if(habit.freqType==='weeklyCount') return computeWeekStreak(habit);
   // walk backward from today over due days until a due day is missing a checkin
@@ -74,19 +76,22 @@ function computeStreak(habit){
     scan.setDate(scan.getDate()-1);
   }
   dueDates.reverse(); // oldest -> newest
+  const bestGrace = {};
   dueDates.forEach(key=>{
     if(isChecked(habit, key)){ running++; best = Math.max(best, running); }
+    else if(key!==todayStr() && (bestGrace[key.slice(0,7)] = (bestGrace[key.slice(0,7)]||0)+1) <= STREAK_GRACE_PER_MONTH){ /* shielded: streak survives, doesn't grow */ }
     else running = 0;
   });
   // current streak: from most recent due day backward
+  const curGrace = {};
   for(let i=dueDates.length-1;i>=0;i--){
     const key = dueDates[i];
     const isToday = key===todayStr();
-    if(isChecked(habit, key)){ cur++; }
-    else{
-      if(isToday) continue; // today not yet checked in doesn't break streak
-      break;
-    }
+    if(isChecked(habit, key)){ cur++; continue; }
+    if(isToday) continue; // today not yet checked in doesn't break streak
+    const mk = key.slice(0,7);
+    if((curGrace[mk] = (curGrace[mk]||0)+1) <= STREAK_GRACE_PER_MONTH) continue; // shielded
+    break;
   }
   return { current: cur, best };
 }
@@ -96,6 +101,13 @@ function freqLabel(habit){
   if(habit.days.length===7) return '每天';
   const sorted = [...habit.days].sort();
   return '每周 · ' + sorted.map(d=>WEEKDAYS[d]).join('');
+}
+// 过去、应打卡、未打卡的格子才能点开写"没完成的原因"
+function dayCellHtml(habit, key, isFuture, checked){
+  const clickable = !isFuture && !checked && key!==todayStr() && isHabitDue(habit, key);
+  const note = habit.notes?.[key];
+  const title = note ? `${key}：${note}` : key;
+  return `<div class="cell ${isFuture?'future':''} ${checked?'checked':''} ${note?'has-note':''}" title="${escapeHtml(title)}" ${clickable?`data-act="dayNote" data-date="${key}"`:''}></div>`;
 }
 function monthHeatmap(habit){
   const now = new Date();
@@ -108,8 +120,7 @@ function monthHeatmap(habit){
   for(let day=1; day<=daysInMonth; day++){
     const key = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const isFuture = key > todayStr();
-    const checked = isChecked(habit, key);
-    cells += `<div class="cell ${isFuture?'future':''} ${checked?'checked':''}" title="${key}"></div>`;
+    cells += dayCellHtml(habit, key, isFuture, isChecked(habit, key));
   }
   return cells;
 }
@@ -120,7 +131,7 @@ function yearHeatmap(habit){
   const today = todayStr();
   let cells = '';
   for(let key=localDateStr(d); key<=today; d.setDate(d.getDate()+1), key=localDateStr(d)){
-    cells += `<div class="cell ${isChecked(habit,key)?'checked':''}" title="${key}"></div>`;
+    cells += dayCellHtml(habit, key, false, isChecked(habit, key));
   }
   return cells;
 }
@@ -268,6 +279,14 @@ function renderHabits(){
       habitHeatYear[id] = !habitHeatYear[id];
       renderHabits(); return;
     }
+    if(act==='dayNote'){
+      const date = e.target.dataset.date;
+      const v = prompt(`${date} 没完成的原因(留空清除)`, h.notes?.[date]||'');
+      if(v===null) return;
+      h.notes = h.notes || {};
+      if(v.trim()) h.notes[date] = v.trim(); else delete h.notes[date];
+      persistHabits(); renderHabits(); return;
+    }
     if(act==='delete'){ removeWithUndo(()=>habits, id, persistHabits, renderHabits, '习惯'); return; }
   });
   el.querySelectorAll('.mood-row button').forEach(b=>b.addEventListener('click',()=>{
@@ -291,7 +310,7 @@ function addHabit(){
   if(habitFreqType==='weekly' && habitSelectedDays.length===0){ alert('每周习惯至少选一天'); return; }
   const color = HABIT_COLORS[habits.length % HABIT_COLORS.length];
   const days = habitFreqType==='weekly' ? [...habitSelectedDays] : [0,1,2,3,4,5,6];
-  const habit = { id:uid(), name, color, freqType:habitFreqType, days, checkins:{}, subHabits:[], createdAt:Date.now() };
+  const habit = { id:uid(), name, color, freqType:habitFreqType, days, checkins:{}, subHabits:[], notes:{}, createdAt:Date.now() };
   if(habitFreqType==='weeklyCount') habit.weeklyTarget = habitWeeklyTarget;
   habits.unshift(habit);
   persistHabits();
