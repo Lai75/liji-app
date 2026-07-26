@@ -47,17 +47,19 @@ function computeWeekStreak(habit){
   }
   return { current, best: Math.max(best, current) };
 }
-// 本月打卡进度(奖励用):应打卡天数 vs 已打卡天数;每周 N 次按天数折算
-function monthProgress(habit){
-  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
-  const dim = new Date(y, m+1, 0).getDate();
+// 奖励周期打卡进度:默认按当月,rewardMonths>1 时滚动统计最近 N 个自然月;每周 N 次按天数折算
+function rewardProgress(habit){
+  const months = habit.rewardMonths || 1;
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth()-(months-1), 1);
+  const end = new Date(now.getFullYear(), now.getMonth()+1, 0);
   let due = 0, done = 0;
-  for(let day=1; day<=dim; day++){
-    const key = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  for(const d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
+    const key = localDateStr(d);
     if(habit.freqType!=='weeklyCount' && isHabitDue(habit, key)) due++;
     if(isChecked(habit, key)) done++;
   }
-  if(habit.freqType==='weeklyCount') due = Math.round((habit.weeklyTarget||3)*dim/7);
+  if(habit.freqType==='weeklyCount') due = Math.round((habit.weeklyTarget||3)*(Math.round((end-start)/86400000)+1)/7);
   return { done, due };
 }
 // 每个自然月最多 2 次漏打卡不清零(护盾),按日期动态算,不占存储
@@ -144,8 +146,9 @@ function habitCardHtml(h, today){
   const cToday = h.checkins[today];
   const partial = !checkedToday && Array.isArray(cToday) && cToday.length>0;
   const unit = h.freqType==='weeklyCount' ? '周' : '天';
-  const mp = monthProgress(h);
+  const mp = rewardProgress(h);
   const rewardHit = mp.due>0 && mp.done>=mp.due;
+  const rewardPeriodLabel = (h.rewardMonths||1)>1 ? `近${h.rewardMonths}个月` : '本月';
   return `
   <div class="habit-card" data-id="${h.id}">
     <div class="habit-top">
@@ -168,10 +171,10 @@ function habitCardHtml(h, today){
       <span>最长连续 ${best} ${unit}</span>
       <button data-act="toggleHeat" style="margin-left:auto;font-size:11px;color:${h.color};">${habitHeatYear[h.id]?'看本月':'看全年'}</button>
     </div>
-    ${h.reward?`<div class="habit-reward" data-act="setReward">🎁 本月打卡 ${mp.done}/${mp.due} · ${rewardHit?`达成！奖励自己：${escapeHtml(h.reward)} 🎉`:`达成奖励：${escapeHtml(h.reward)}`}</div>`:''}
+    ${h.reward?`<div class="habit-reward" data-act="setReward">🎁 ${rewardPeriodLabel}打卡 ${mp.done}/${mp.due} · ${rewardHit?`达成！奖励自己：${escapeHtml(h.reward)} 🎉`:`达成奖励：${escapeHtml(h.reward)}`}</div>`:''}
     <div class="habit-actions">
       <button data-act="addSubHabit">＋ 小习惯</button>
-      <button data-act="setReward">🎁 ${h.reward?'改本月奖励':'设本月奖励'}</button>
+      <button data-act="setReward">🎁 ${h.reward?'改奖励':'设奖励'}</button>
     </div>
   </div>`;
 }
@@ -245,14 +248,16 @@ function renderHabits(){
       else h.checkins[today] = true;
       persistHabits(); renderHabits();
       if(isChecked(h, today) && h.reward){
-        const mp = monthProgress(h);
-        if(mp.due>0 && mp.done>=mp.due) toast(`🎁 本月达成！奖励自己：${h.reward}`);
+        const mp = rewardProgress(h);
+        if(mp.due>0 && mp.done>=mp.due) toast(`🎁 达成！奖励自己：${h.reward}`);
       }
       return;
     }
     if(act==='toggleSubHabit' || act==='delSubHabit'){
       const sid = e.target.dataset.sid;
       if(act==='delSubHabit'){
+        const sub = (h.subHabits||[]).find(s=>s.id===sid);
+        if(!confirm(`删除小习惯"${sub?.name||''}"？`)) return;
         h.subHabits = (h.subHabits||[]).filter(s=>s.id!==sid);
       }else{
         const subs = h.subHabits||[];
@@ -270,9 +275,13 @@ function renderHabits(){
       persistHabits(); renderHabits(); return;
     }
     if(act==='setReward'){
-      const v = prompt('这个月坚持下来，给自己什么奖励？(留空清除)', h.reward||'');
+      const v = prompt('坚持下来，给自己什么奖励？(留空清除)', h.reward||'');
       if(v===null) return;
+      if(!v.trim()){ h.reward=''; persistHabits(); renderHabits(); return; }
+      const mStr = prompt('坚持多少个月算达成？(默认 1，即本月)', String(h.rewardMonths||1));
+      if(mStr===null) return;
       h.reward = v.trim();
+      h.rewardMonths = Math.max(1, parseInt(mStr,10)||1);
       persistHabits(); renderHabits(); return;
     }
     if(act==='toggleHeat'){
