@@ -304,7 +304,18 @@ function renderHabits(){
     journal[today] = cur;
     persistJournal(); renderHabits();
   }));
+  // input(防抖)而非只在 change(失焦)时存:后台每分钟自动同步一次可能在没失焦时就把整页重渲染,
+  // 只靠 change 会把还没失焦的输入直接冲掉
+  let journalSaveTimer = null;
+  el.querySelector('#journalText').addEventListener('input', e=>{
+    const cur = journal[today]||{};
+    cur.text = e.target.value;
+    journal[today] = cur;
+    clearTimeout(journalSaveTimer);
+    journalSaveTimer = setTimeout(persistJournal, 600);
+  });
   el.querySelector('#journalText').addEventListener('change', e=>{
+    clearTimeout(journalSaveTimer);
     const cur = journal[today]||{};
     cur.text = e.target.value.trim();
     journal[today] = cur;
