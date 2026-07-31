@@ -60,3 +60,20 @@ document.addEventListener('visibilitychange', ()=>{
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
+
+/* ---------------- 安装到桌面/主屏幕 ---------------- */
+let deferredInstallPrompt = null;
+const installBtn = document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  installBtn.hidden = false;
+});
+installBtn.addEventListener('click', async () => {
+  if(!deferredInstallPrompt) return;
+  installBtn.hidden = true;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+});
+window.addEventListener('appinstalled', () => { installBtn.hidden = true; });

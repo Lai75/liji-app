@@ -1,8 +1,10 @@
 {
+  "id": "./",
   "name": "黎记",
   "short_name": "黎记",
   "description": "待办清单 + 习惯打卡 + 记账 + 数码库",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#131417",
   "theme_color": "#131417",
