@@ -49,6 +49,7 @@ let recurring = []; // 定期账单规则 {id,type,amount,category,note,day,star
 let ledgerSearch = '';
 let budget = 0;
 let habitHeatYear = {}; // id -> 是否显示年视图(会话内有效即可,不持久化)
+let habitMonthOffset = {}; // id -> 月视图往前翻了几个月(会话内有效即可,不持久化)
 let gadgetFilter = 'all';
 let gadgetFormCat = GADGET_CATS[0].id;
 let gadgetFormChannel = CHANNELS[0];

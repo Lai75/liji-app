@@ -111,9 +111,13 @@ function dayCellHtml(habit, key, isFuture, checked){
   const title = note ? `${key}：${note}` : key;
   return `<div class="cell ${isFuture?'future':''} ${checked?'checked':''} ${note?'has-note':''}" title="${escapeHtml(title)}" ${clickable?`data-act="dayNote" data-date="${key}"`:''}></div>`;
 }
-function monthHeatmap(habit){
-  const now = new Date();
-  const year = now.getFullYear(), month = now.getMonth();
+function monthLabel(offset){
+  const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-offset);
+  return `${d.getFullYear()}年${d.getMonth()+1}月`;
+}
+function monthHeatmap(habit, offset=0){
+  const base = new Date(); base.setDate(1); base.setMonth(base.getMonth()-offset);
+  const year = base.getFullYear(), month = base.getMonth();
   const firstDay = new Date(year, month, 1);
   const startOffset = firstDay.getDay();
   const daysInMonth = new Date(year, month+1, 0).getDate();
@@ -146,6 +150,7 @@ function habitCardHtml(h, today){
   const cToday = h.checkins[today];
   const partial = !checkedToday && Array.isArray(cToday) && cToday.length>0;
   const unit = h.freqType==='weeklyCount' ? '周' : '天';
+  const monthOffset = habitMonthOffset[h.id]||0;
   const mp = rewardProgress(h);
   const rewardHit = mp.due>0 && mp.done>=mp.due;
   const rewardPeriodLabel = (h.rewardMonths||1)>1 ? `近${h.rewardMonths}个月` : '本月';
@@ -165,7 +170,13 @@ function habitCardHtml(h, today){
       const sdone = cToday===true || (Array.isArray(cToday) && cToday.includes(s.id));
       return `<button class="habit-sub ${sdone?'done':''}" data-act="toggleSubHabit" data-sid="${s.id}">${sdone?'✔':'○'} ${escapeHtml(s.name)}<span class="subdel" data-act="delSubHabit" data-sid="${s.id}">✕</span></button>`;
     }).join('')}</div>`:''}
-    ${habitHeatYear[h.id] ? `<div class="heatmap-year">${yearHeatmap(h)}</div>` : `<div class="heatmap">${monthHeatmap(h)}</div>`}
+    ${habitHeatYear[h.id] ? `<div class="heatmap-year">${yearHeatmap(h)}</div>` : `
+    <div class="month-nav" style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--faint);margin:2px 0;">
+      <button data-act="prevMonth" style="cursor:pointer;">‹ 上月</button>
+      <span>${monthLabel(monthOffset)}</span>
+      <button data-act="nextMonth" style="cursor:pointer;visibility:${monthOffset===0?'hidden':'visible'};">本月 ›</button>
+    </div>
+    <div class="heatmap">${monthHeatmap(h, monthOffset)}</div>`}
     <div class="habit-stats">
       <span>当前连续 ${current} ${unit}</span>
       <span>最长连续 ${best} ${unit}</span>
@@ -288,8 +299,21 @@ function renderHabits(){
       habitHeatYear[id] = !habitHeatYear[id];
       renderHabits(); return;
     }
+    if(act==='prevMonth'){
+      habitMonthOffset[id] = Math.min(11, (habitMonthOffset[id]||0)+1);
+      renderHabits(); return;
+    }
+    if(act==='nextMonth'){
+      habitMonthOffset[id] = Math.max(0, (habitMonthOffset[id]||0)-1);
+      renderHabits(); return;
+    }
     if(act==='dayNote'){
       const date = e.target.dataset.date;
+      if(confirm(`${date} 补签为已完成？`)){
+        h.checkins[date] = true;
+        delete h.notes?.[date];
+        persistHabits(); renderHabits(); return;
+      }
       const v = prompt(`${date} 没完成的原因(留空清除)`, h.notes?.[date]||'');
       if(v===null) return;
       h.notes = h.notes || {};
