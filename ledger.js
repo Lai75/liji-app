@@ -79,17 +79,19 @@ function ledgerBodyHtml(){
   const income = list.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
   const expense = list.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
   const saving = list.filter(t=>t.type==='saving').reduce((s,t)=>s+t.amount,0);
+  // 标了"不计入预算"的分类(比如给妈妈的钱)不进总预算的计算,但仍算进上面的"支出"汇总和分类小计
+  const budgetExpense = list.filter(t=>t.type==='expense' && !budgetExcludedCats.includes(t.category)).reduce((s,t)=>s+t.amount,0);
 
   let budgetHtml = '';
   if(!searching){
     if(budget>0){
-      const pct = expense/budget*100;
+      const pct = budgetExpense/budget*100;
       const barColor = pct>=100 ? 'var(--expense)' : pct>=80 ? 'var(--flag)' : 'var(--brand)';
       budgetHtml = `
       <div class="box" data-act="setBudget" style="cursor:pointer;padding:10px 12px;" title="点击修改预算">
         <div class="row" style="justify-content:space-between;font-size:12px;margin-bottom:6px;">
           <span style="color:var(--muted);">本月预算 RM ${fmtMoney(budget)}</span>
-          <span class="mono" style="color:${pct>=100?'var(--expense)':'var(--muted)'};">${pct>=100?`超支 RM ${fmtMoney(expense-budget)}`:`剩余 RM ${fmtMoney(budget-expense)}`}</span>
+          <span class="mono" style="color:${pct>=100?'var(--expense)':'var(--muted)'};">${pct>=100?`超支 RM ${fmtMoney(budgetExpense-budget)}`:`剩余 RM ${fmtMoney(budget-budgetExpense)}`}</span>
         </div>
         <div style="height:6px;border-radius:3px;background:var(--soft);overflow:hidden;">
           <div style="height:100%;width:${Math.min(100,pct)}%;background:${barColor};"></div>
@@ -109,9 +111,10 @@ function ledgerBodyHtml(){
       ${Object.entries(catMap).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{
         const cb = categoryBudgets[c] || 0;
         const over = cb>0 && v>cb;
+        const excluded = budgetExcludedCats.includes(c);
         return `
         <div class="row" data-act="setCatBudget" data-cat="${escapeHtml(c)}" style="justify-content:space-between;font-size:12px;padding:3px 0;cursor:pointer;" title="点击设置该分类本月预算">
-          <span style="color:var(--ink-soft);">${escapeHtml(c)}${cb>0?` <span style="color:var(--faint);">/ RM ${fmtMoney(cb)}</span>`:''}</span>
+          <span style="color:var(--ink-soft);">${escapeHtml(c)}${excluded?' <span style="color:var(--faint);" title="不计入总预算">⊘</span>':''}${cb>0?` <span style="color:var(--faint);">/ RM ${fmtMoney(cb)}</span>`:''}</span>
           <span class="mono" style="color:${over?'var(--expense)':'var(--muted)'};"><b style="color:${over?'var(--expense)':'var(--ink)'};">RM ${fmtMoney(v)}</b> · ${Math.round(v/expense*100)}%</span>
         </div>`;}).join('')}
     </div>`;
@@ -159,7 +162,10 @@ function openBudgetModal(focusCat){
       <div class="modal-cats">
         ${cats.map(c=>`
         <div class="modal-field row">
-          <span>${escapeHtml(c)}</span>
+          <span style="flex:1;">${escapeHtml(c)}</span>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);white-space:nowrap;" title="不勾选=这个分类不算进总预算(比如给家人的钱)">
+            <input type="checkbox" class="mCatIncl" data-cat="${escapeHtml(c)}" ${budgetExcludedCats.includes(c)?'':'checked'}> 计入
+          </label>
           <input type="text" inputmode="decimal" class="mCatInput" data-cat="${escapeHtml(c)}" placeholder="0=不限" value="${categoryBudgets[c]||''}">
         </div>`).join('')}
       </div>
@@ -173,7 +179,7 @@ function openBudgetModal(focusCat){
   const close = () => { overlay.classList.remove('show'); setTimeout(()=>overlay.remove(), 200); };
   overlay.addEventListener('click', e=>{ if(e.target===overlay) close(); });
   overlay.querySelector('#mCancel').addEventListener('click', close);
-  overlay.querySelectorAll('input').forEach(inp=>inp.addEventListener('input', e=>{ e.target.value = e.target.value.replace(/[^0-9.]/g,''); }));
+  overlay.querySelectorAll('input[type=text]').forEach(inp=>inp.addEventListener('input', e=>{ e.target.value = e.target.value.replace(/[^0-9.]/g,''); }));
   overlay.querySelector('#mSave').addEventListener('click', ()=>{
     budget = parseFloat(overlay.querySelector('#mTotalBudget').value) || 0;
     saveKey('shiji-budget', budget);
@@ -182,6 +188,8 @@ function openBudgetModal(focusCat){
       if(n>0) categoryBudgets[inp.dataset.cat] = n; else delete categoryBudgets[inp.dataset.cat];
     });
     saveKey('shiji-category-budgets', categoryBudgets);
+    budgetExcludedCats = [...overlay.querySelectorAll('.mCatIncl:not(:checked)')].map(chk=>chk.dataset.cat);
+    saveKey('shiji-budget-excluded-cats', budgetExcludedCats);
     close();
     renderLedger();
   });
@@ -214,7 +222,15 @@ function renderLedger(){
         <input type="date" id="dateInput" value="${todayStr()}" />
       </div>
       <div class="chiprow" id="catchips">
-        ${cats.map(c=>`<button class="chip ${ledgerCategory===c?'active':''}" data-cat="${escapeHtml(c)}" style="${ledgerCategory===c?`border-color:${typeColor(ledgerType)};background:${typeColorSoft(ledgerType)};color:${typeColor(ledgerType)};`:''}">${escapeHtml(c)}</button>`).join('')}
+        ${cats.map(c=>{
+          const active = ledgerCategory===c;
+          const activeStyle = active?`border-color:${typeColor(ledgerType)};background:${typeColorSoft(ledgerType)};color:${typeColor(ledgerType)};`:'';
+          if(!customCats[ledgerType].includes(c)) return `<button class="chip ${active?'active':''}" data-cat="${escapeHtml(c)}" style="${activeStyle}">${escapeHtml(c)}</button>`;
+          return `<span class="chip" style="${activeStyle}display:inline-flex;align-items:center;gap:6px;">
+            <button data-cat="${escapeHtml(c)}" style="all:unset;cursor:pointer;">${escapeHtml(c)}</button>
+            <button data-delcat="${escapeHtml(c)}" title="删除这个自定义分类" style="all:unset;cursor:pointer;color:var(--faint);font-size:10px;">✕</button>
+          </span>`;
+        }).join('')}
         <button class="chip" data-addcat="1" style="border-style:dashed;">＋自定义</button>
       </div>
       <div class="row note-row">
@@ -262,18 +278,28 @@ function renderLedger(){
   el.querySelectorAll('.typebtns button').forEach(b=>b.addEventListener('click',()=>{
     ledgerType=b.dataset.type; ledgerCategory=LEDGER_CATS[ledgerType][0]; renderLedger();
   }));
-  el.querySelectorAll('#catchips .chip').forEach(b=>b.addEventListener('click',()=>{
-    if(b.dataset.addcat){
+  el.querySelector('#catchips').addEventListener('click', e=>{
+    const delBtn = e.target.closest('[data-delcat]');
+    if(delBtn){
+      if(!confirm(`删除自定义分类「${delBtn.dataset.delcat}」?`)) return;
+      customCats[ledgerType] = customCats[ledgerType].filter(x=>x!==delBtn.dataset.delcat);
+      if(ledgerCategory===delBtn.dataset.delcat) ledgerCategory = LEDGER_CATS[ledgerType][0];
+      saveKey('shiji-custom-cats', customCats);
+      renderLedger();
+      return;
+    }
+    if(e.target.closest('[data-addcat]')){
       const name = (prompt('新分类名称') || '').trim();
       if(!name) return;
       const cats = LEDGER_CATS[ledgerType].concat(customCats[ledgerType]);
       if(!cats.includes(name)) { customCats[ledgerType].push(name); saveKey('shiji-custom-cats', customCats); }
       ledgerCategory = name;
-    }else{
-      ledgerCategory = b.dataset.cat;
+      renderLedger();
+      return;
     }
-    renderLedger();
-  }));
+    const catBtn = e.target.closest('[data-cat]');
+    if(catBtn){ ledgerCategory = catBtn.dataset.cat; renderLedger(); }
+  });
   el.querySelector('#prevMonth').addEventListener('click',()=>shiftMonth(-1));
   el.querySelector('#nextMonth').addEventListener('click',()=>shiftMonth(1));
   el.querySelector('#addTxnBtn').addEventListener('click', addTxn);

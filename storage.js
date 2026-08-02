@@ -51,6 +51,7 @@ let recurring = []; // 定期账单规则 {id,type,amount,category,note,day,star
 let ledgerSearch = '';
 let budget = 0;
 let categoryBudgets = {}; // 分类 -> 该分类本月预算上限 (RM)
+let budgetExcludedCats = []; // 这些分类不计入总预算(比如给家人的钱)
 let habitHeatYear = {}; // id -> 是否显示年视图(会话内有效即可,不持久化)
 let habitMonthOffset = {}; // id -> 月视图往前翻了几个月(会话内有效即可,不持久化)
 let gadgetFilter = 'all';
@@ -168,6 +169,7 @@ async function loadAll(){
   customCats.saving = customCats.saving || []; // 旧数据没有 saving 分类,补上避免后面 .concat 报错
   budget = await loadKey('shiji-budget', 0);
   categoryBudgets = await loadKey('shiji-category-budgets', {});
+  budgetExcludedCats = await loadKey('shiji-budget-excluded-cats', []);
   journal = await loadKey('shiji-journal', {});
   recurring = await loadKey('shiji-recurring', []);
   habits.forEach(h=>{ if(OLD_HABIT_COLORS[h.color]) h.color = OLD_HABIT_COLORS[h.color]; });
