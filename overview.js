@@ -41,7 +41,7 @@ function renderOverview(){
   for(let i=13;i>=0;i--){ const d = new Date(); d.setDate(d.getDate()-i); last14.push(localDateStr(d)); }
 
   el.innerHTML = `
-    <h1 class="serif" id="ovTitle" style="user-select:none;">总览</h1>
+    <h1 class="serif">总览</h1>
     <div class="sub">今天的进度与花销，一眼看清</div>
 
     <div class="ticket mono">
@@ -153,14 +153,6 @@ function renderOverview(){
     </div>
   `;
 
-  let ovPressTimer = null;
-  const ovTitle = el.querySelector('#ovTitle');
-  const startOvPress = () => { ovPressTimer = setTimeout(()=>{ toggleMoneyHidden(); renderOverview(); toast(moneyHidden?'🙈 已隐藏金额':'👀 已显示金额'); }, 600); };
-  const cancelOvPress = () => clearTimeout(ovPressTimer);
-  ovTitle.addEventListener('mousedown', startOvPress);
-  ovTitle.addEventListener('touchstart', startOvPress, {passive:true});
-  ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>ovTitle.addEventListener(ev, cancelOvPress));
-
   const syncMsg = t => { const m = el.querySelector('#syncMsg'); if(m) m.textContent = t; };
   el.querySelector('#loginBtn')?.addEventListener('click', async ()=>{
     const email = el.querySelector('#syncEmail').value.trim();
@@ -257,7 +249,7 @@ function renderOverview(){
 
 /* ---------------- backup ---------------- */
 function exportData(){
-  const blob = new Blob([JSON.stringify({version:1, tasks, txns, habits, gadgets, customCats, budget, journal, recurring}, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({version:1, tasks, txns, habits, gadgets, customCats, budget, categoryBudgets, journal, recurring}, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `liji-backup-${todayStr()}.json`;
@@ -275,6 +267,7 @@ async function importData(e){
     tasks = data.tasks; txns = data.txns; habits = data.habits; gadgets = data.gadgets;
     if(data.customCats){ customCats = data.customCats; saveKey('shiji-custom-cats', customCats); }
     if(typeof data.budget==='number'){ budget = data.budget; saveKey('shiji-budget', budget); }
+    if(data.categoryBudgets && typeof data.categoryBudgets==='object'){ categoryBudgets = data.categoryBudgets; saveKey('shiji-category-budgets', categoryBudgets); }
     if(data.journal && typeof data.journal==='object'){ journal = data.journal; persistJournal(); }
     if(Array.isArray(data.recurring)){ recurring = data.recurring; persistRecurring(); }
     persistTasks(); persistTxns(); persistHabits(); persistGadgets();

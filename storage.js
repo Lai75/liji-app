@@ -48,6 +48,7 @@ let customCats = {expense:[], income:[]};
 let recurring = []; // 定期账单规则 {id,type,amount,category,note,day,start,lastPosted}
 let ledgerSearch = '';
 let budget = 0;
+let categoryBudgets = {}; // 分类 -> 该分类本月预算上限 (RM)
 let habitHeatYear = {}; // id -> 是否显示年视图(会话内有效即可,不持久化)
 let habitMonthOffset = {}; // id -> 月视图往前翻了几个月(会话内有效即可,不持久化)
 let gadgetFilter = 'all';
@@ -70,7 +71,7 @@ let ledgerCategory = EXPENSE_CATS[0];
 let pieChart=null, barChart=null;
 
 const uid = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36);
-let moneyHidden = localStorage.getItem('shiji-money-hidden')==='1'; // 长按总览标题切换,隐藏金额防偷窥
+let moneyHidden = localStorage.getItem('shiji-money-hidden')==='1'; // 长按记账本标题切换,隐藏金额防偷窥
 function toggleMoneyHidden(){
   moneyHidden = !moneyHidden;
   localStorage.setItem('shiji-money-hidden', moneyHidden?'1':'0');
@@ -163,6 +164,7 @@ async function loadAll(){
   gadgets = await loadKey('shiji-gadgets', []);
   customCats = await loadKey('shiji-custom-cats', {expense:[], income:[]});
   budget = await loadKey('shiji-budget', 0);
+  categoryBudgets = await loadKey('shiji-category-budgets', {});
   journal = await loadKey('shiji-journal', {});
   recurring = await loadKey('shiji-recurring', []);
   habits.forEach(h=>{ if(OLD_HABIT_COLORS[h.color]) h.color = OLD_HABIT_COLORS[h.color]; });

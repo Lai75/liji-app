@@ -1,7 +1,7 @@
 /* ---------------- cloud sync (Supabase) ---------------- */
 const SB_URL = 'https://xmiqcomltvkbodbqaycg.supabase.co';
 const SB_KEY = 'sb_publishable_r6MiUsRs3CsmPggYhEqY0g_bh95lo5I';
-const SYNC_KEYS = ['shiji-tasks','shiji-transactions','shiji-habits','shiji-gadgets','shiji-custom-cats','shiji-budget','shiji-journal','shiji-recurring'];
+const SYNC_KEYS = ['shiji-tasks','shiji-transactions','shiji-habits','shiji-gadgets','shiji-custom-cats','shiji-budget','shiji-category-budgets','shiji-journal','shiji-recurring'];
 let session = JSON.parse(localStorage.getItem('shiji-session')||'null');
 let syncMeta = JSON.parse(localStorage.getItem('shiji-sync-meta')||'{}'); // key -> 本地值的时间戳(ms)
 let dirty = new Set(JSON.parse(localStorage.getItem('shiji-dirty')||'[]')); // 尚未推到云端的 key

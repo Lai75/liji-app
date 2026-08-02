@@ -99,11 +99,14 @@ function ledgerBodyHtml(){
     list.filter(t=>t.type==='expense').forEach(t=>{ catMap[t.category]=(catMap[t.category]||0)+t.amount; });
     subtotalHtml = `
     <div class="box" style="padding:10px 12px;">
-      ${Object.entries(catMap).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`
-        <div class="row" style="justify-content:space-between;font-size:12px;padding:3px 0;">
-          <span style="color:var(--ink-soft);">${escapeHtml(c)}</span>
-          <span class="mono" style="color:var(--muted);"><b style="color:var(--ink);">RM ${fmtMoney(v)}</b> · ${Math.round(v/expense*100)}%</span>
-        </div>`).join('')}
+      ${Object.entries(catMap).sort((a,b)=>b[1]-a[1]).map(([c,v])=>{
+        const cb = categoryBudgets[c] || 0;
+        const over = cb>0 && v>cb;
+        return `
+        <div class="row" data-act="setCatBudget" data-cat="${escapeHtml(c)}" style="justify-content:space-between;font-size:12px;padding:3px 0;cursor:pointer;" title="点击设置该分类本月预算">
+          <span style="color:var(--ink-soft);">${escapeHtml(c)}${cb>0?` <span style="color:var(--faint);">/ RM ${fmtMoney(cb)}</span>`:''}</span>
+          <span class="mono" style="color:${over?'var(--expense)':'var(--muted)'};"><b style="color:${over?'var(--expense)':'var(--ink)'};">RM ${fmtMoney(v)}</b> · ${Math.round(v/expense*100)}%</span>
+        </div>`;}).join('')}
     </div>`;
   }
 
@@ -138,6 +141,15 @@ function setBudget(){
   renderLedger();
 }
 
+function setCatBudget(cat){
+  const v = prompt(`「${cat}」本月预算 (RM)，输入 0 清除`, categoryBudgets[cat] || '');
+  if(v===null) return;
+  const n = parseFloat(v) || 0;
+  if(n>0) categoryBudgets[cat] = n; else delete categoryBudgets[cat];
+  saveKey('shiji-category-budgets', categoryBudgets);
+  renderLedger();
+}
+
 function renderLedger(){
   const el = document.getElementById('view-ledger');
   // 重渲染会重建表单,先留住已输入的值(切分类/月份时不丢)
@@ -149,7 +161,7 @@ function renderLedger(){
   const cats = (ledgerType==='expense'?EXPENSE_CATS:INCOME_CATS).concat(customCats[ledgerType]);
 
   el.innerHTML = `
-    <h1 class="serif">记账本</h1>
+    <h1 class="serif" id="ldgTitle" style="user-select:none;">记账本</h1>
     <div class="sub">钱花在哪，心里有数</div>
     <div class="box">
       <div class="typebtns">
@@ -199,6 +211,14 @@ function renderLedger(){
     <div id="ledgerBody">${ledgerBodyHtml()}</div>
   `;
 
+  let ldgPressTimer = null;
+  const ldgTitle = el.querySelector('#ldgTitle');
+  const startLdgPress = () => { ldgPressTimer = setTimeout(()=>{ toggleMoneyHidden(); renderLedger(); toast(moneyHidden?'🙈 已隐藏金额':'👀 已显示金额'); }, 600); };
+  const cancelLdgPress = () => clearTimeout(ldgPressTimer);
+  ldgTitle.addEventListener('mousedown', startLdgPress);
+  ldgTitle.addEventListener('touchstart', startLdgPress, {passive:true});
+  ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>ldgTitle.addEventListener(ev, cancelLdgPress));
+
   el.querySelectorAll('.typebtns button').forEach(b=>b.addEventListener('click',()=>{
     ledgerType=b.dataset.type; ledgerCategory=(ledgerType==='expense'?EXPENSE_CATS:INCOME_CATS)[0]; renderLedger();
   }));
@@ -238,6 +258,8 @@ function renderLedger(){
   });
   el.querySelector('#ledgerBody').addEventListener('click', e=>{
     if(e.target.closest('[data-act=setBudget]')){ setBudget(); return; }
+    const catRow = e.target.closest('[data-act=setCatBudget]');
+    if(catRow){ setCatBudget(catRow.dataset.cat); return; }
     const row = e.target.closest('.txn-row');
     if(!row) return;
     const id = row.dataset.id;
