@@ -133,21 +133,52 @@ function ledgerBodyHtml(){
     </div>`;
 }
 
-function setBudget(){
-  const v = prompt('每月支出预算 (RM)，输入 0 清除', budget || '');
-  if(v===null) return;
-  budget = parseFloat(v) || 0;
-  saveKey('shiji-budget', budget);
-  renderLedger();
-}
+function setBudget(){ openBudgetModal(); }
+function setCatBudget(cat){ openBudgetModal(cat); }
 
-function setCatBudget(cat){
-  const v = prompt(`「${cat}」本月预算 (RM)，输入 0 清除`, categoryBudgets[cat] || '');
-  if(v===null) return;
-  const n = parseFloat(v) || 0;
-  if(n>0) categoryBudgets[cat] = n; else delete categoryBudgets[cat];
-  saveKey('shiji-category-budgets', categoryBudgets);
-  renderLedger();
+// 一次性设总预算 + 各分类预算,而不是逐个分类点开单独设(点分类小计里的某一行会带焦点跳到对应输入框)
+function openBudgetModal(focusCat){
+  const cats = EXPENSE_CATS.concat(customCats.expense);
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <h3 class="serif">设置本月预算</h3>
+      <div class="modal-field row">
+        <span>总预算</span>
+        <input type="text" inputmode="decimal" id="mTotalBudget" placeholder="0=不限" value="${budget||''}">
+      </div>
+      <div class="modal-cats">
+        ${cats.map(c=>`
+        <div class="modal-field row">
+          <span>${escapeHtml(c)}</span>
+          <input type="text" inputmode="decimal" class="mCatInput" data-cat="${escapeHtml(c)}" placeholder="0=不限" value="${categoryBudgets[c]||''}">
+        </div>`).join('')}
+      </div>
+      <div class="modal-actions row">
+        <button id="mCancel">取消</button>
+        <button id="mSave" class="add-btn">保存</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(()=>overlay.classList.add('show'));
+  const close = () => { overlay.classList.remove('show'); setTimeout(()=>overlay.remove(), 200); };
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) close(); });
+  overlay.querySelector('#mCancel').addEventListener('click', close);
+  overlay.querySelectorAll('input').forEach(inp=>inp.addEventListener('input', e=>{ e.target.value = e.target.value.replace(/[^0-9.]/g,''); }));
+  overlay.querySelector('#mSave').addEventListener('click', ()=>{
+    budget = parseFloat(overlay.querySelector('#mTotalBudget').value) || 0;
+    saveKey('shiji-budget', budget);
+    overlay.querySelectorAll('.mCatInput').forEach(inp=>{
+      const n = parseFloat(inp.value) || 0;
+      if(n>0) categoryBudgets[inp.dataset.cat] = n; else delete categoryBudgets[inp.dataset.cat];
+    });
+    saveKey('shiji-category-budgets', categoryBudgets);
+    close();
+    renderLedger();
+  });
+  const target = focusCat ? overlay.querySelector(`.mCatInput[data-cat="${CSS.escape(focusCat)}"]`) : overlay.querySelector('#mTotalBudget');
+  setTimeout(()=>{ target?.focus(); target?.scrollIntoView({block:'center'}); }, 260);
 }
 
 function renderLedger(){

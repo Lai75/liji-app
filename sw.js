@@ -1,5 +1,5 @@
 // 黎记 Service Worker:network-first,断网回退缓存(改完代码刷新即生效,同时离线可用)
-const CACHE = 'liji-v22';
+const CACHE = 'liji-v23';
 const ASSETS = ['./', './index.html', './styles.css', './storage.js', './sync.js', './tasks.js', './habits.js', './ledger.js', './gadgets.js', './overview.js', './main.js', './chart.umd.min.js', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
