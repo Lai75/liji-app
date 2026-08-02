@@ -1,6 +1,12 @@
 /* ================= LEDGER ================= */
 function monthKey(d){ return d.slice(0,7); }
 
+// 三种账目类型共用的颜色/文案:支出/收入是老的,储蓄是并列加的第三种
+function typeLabel(t){ return t==='expense'?'支出':t==='saving'?'储蓄':'收入'; }
+function typeColor(t){ return t==='expense'?'var(--expense)':t==='saving'?'var(--saving)':'var(--income)'; }
+function typeColorSoft(t){ return t==='expense'?'var(--expense-soft)':t==='saving'?'var(--saving-soft)':'var(--income-soft)'; }
+function typeSign(t){ return t==='expense'?'-':'+'; }
+
 /* 定期账单:每月 day 日自动补记。id 用 rec-<规则id>-<年月> 确定性生成,
    两台设备同月各补一笔时同步合并按 id 去重;去重集合读 localStorage 原始数据(含墓碑),
    手动删掉的那笔留有墓碑,不会被补回来 */
@@ -49,7 +55,7 @@ function addRecurring(){
 function exportLedgerCsv(){
   const rows = [['日期','类型','分类','金额(RM)','备注'],
     ...txns.slice().sort((a,b)=> a.date<b.date?1:-1)
-      .map(t=>[t.date, t.type==='expense'?'支出':'收入', t.category, t.amount, t.note||''])];
+      .map(t=>[t.date, typeLabel(t.type), t.category, t.amount, t.note||''])];
   // BOM 让 Excel 认出 UTF-8,中文才不乱码
   const csv = String.fromCharCode(0xFEFF)+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const a = document.createElement('a');
@@ -72,6 +78,7 @@ function ledgerBodyHtml(){
   const groupedEntries = Object.entries(grouped).sort((a,b)=> a[0]<b[0]?1:-1);
   const income = list.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
   const expense = list.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const saving = list.filter(t=>t.type==='saving').reduce((s,t)=>s+t.amount,0);
 
   let budgetHtml = '';
   if(!searching){
@@ -111,10 +118,11 @@ function ledgerBodyHtml(){
   }
 
   return `
-    <div class="summary3">
+    <div class="summary4">
       <div class="stat"><div class="l">${searching?'匹配收入':'收入'}</div><div class="v mono" style="color:var(--income);">${fmtMoney(income)}</div></div>
       <div class="stat"><div class="l">${searching?'匹配支出':'支出'}</div><div class="v mono" style="color:var(--expense);">${fmtMoney(expense)}</div></div>
-      <div class="stat"><div class="l">结余</div><div class="v mono" style="color:var(--gold);">${fmtMoney(income-expense)}</div></div>
+      <div class="stat"><div class="l">${searching?'匹配储蓄':'储蓄'}</div><div class="v mono" style="color:var(--saving);">${fmtMoney(saving)}</div></div>
+      <div class="stat"><div class="l">结余</div><div class="v mono" style="color:var(--gold);">${fmtMoney(income-expense-saving)}</div></div>
     </div>
     ${budgetHtml}
     ${subtotalHtml}
@@ -124,9 +132,9 @@ function ledgerBodyHtml(){
           <div class="day-label mono">${d}</div>
           ${items.map(t=>`
             <div class="txn-row" data-id="${t.id}">
-              <span class="cat" style="background:${t.type==='expense'?'var(--expense-soft)':'var(--income-soft)'};color:${t.type==='expense'?'var(--expense)':'var(--income)'};">${escapeHtml(t.category)}</span>
+              <span class="cat" style="background:${typeColorSoft(t.type)};color:${typeColor(t.type)};">${escapeHtml(t.category)}</span>
               <span class="note">${escapeHtml(t.note||'')}</span>
-              <span class="amt mono" style="color:${t.type==='expense'?'var(--expense)':'var(--income)'};">${t.type==='expense'?'-':'+'}${fmtMoney(t.amount)}</span>
+              <span class="amt mono" style="color:${typeColor(t.type)};">${typeSign(t.type)}${fmtMoney(t.amount)}</span>
               <button class="rm" data-act="rmTxn">✕</button>
             </div>`).join('')}
         </div>`).join('')}
@@ -189,7 +197,7 @@ function renderLedger(){
     date: el.querySelector('#dateInput')?.value || todayStr(),
     note: el.querySelector('#noteInput')?.value || '',
   };
-  const cats = (ledgerType==='expense'?EXPENSE_CATS:INCOME_CATS).concat(customCats[ledgerType]);
+  const cats = LEDGER_CATS[ledgerType].concat(customCats[ledgerType]);
 
   el.innerHTML = `
     <h1 class="serif" id="ldgTitle" style="user-select:none;">记账本</h1>
@@ -198,14 +206,15 @@ function renderLedger(){
       <div class="typebtns">
         <button class="expense ${ledgerType==='expense'?'active':''}" data-type="expense">支出</button>
         <button class="income ${ledgerType==='income'?'active':''}" data-type="income">收入</button>
+        <button class="saving ${ledgerType==='saving'?'active':''}" data-type="saving">储蓄</button>
       </div>
       <div class="row amount-row">
-        <span class="sign mono" style="color:${ledgerType==='expense'?'var(--expense)':'var(--income)'};">RM</span>
+        <span class="sign mono" style="color:${typeColor(ledgerType)};">RM</span>
         <input type="text" id="amountInput" inputmode="decimal" placeholder="0.00" class="mono" />
         <input type="date" id="dateInput" value="${todayStr()}" />
       </div>
       <div class="chiprow" id="catchips">
-        ${cats.map(c=>`<button class="chip ${ledgerCategory===c?'active':''}" data-cat="${escapeHtml(c)}" style="${ledgerCategory===c?`border-color:${ledgerType==='expense'?'var(--expense)':'var(--income)'};background:${ledgerType==='expense'?'var(--expense-soft)':'var(--income-soft)'};color:${ledgerType==='expense'?'var(--expense)':'var(--income)'};`:''}">${escapeHtml(c)}</button>`).join('')}
+        ${cats.map(c=>`<button class="chip ${ledgerCategory===c?'active':''}" data-cat="${escapeHtml(c)}" style="${ledgerCategory===c?`border-color:${typeColor(ledgerType)};background:${typeColorSoft(ledgerType)};color:${typeColor(ledgerType)};`:''}">${escapeHtml(c)}</button>`).join('')}
         <button class="chip" data-addcat="1" style="border-style:dashed;">＋自定义</button>
       </div>
       <div class="row note-row">
@@ -222,7 +231,7 @@ function renderLedger(){
       ${recurring.map(r=>`
         <div class="row" style="justify-content:space-between;font-size:12px;padding:3px 0;gap:8px;">
           <span style="color:var(--ink-soft);">每月 ${r.day} 日 · ${escapeHtml(r.category)}${r.note?` · ${escapeHtml(r.note)}`:''}</span>
-          <span class="mono" style="color:${r.type==='expense'?'var(--expense)':'var(--income)'};flex-shrink:0;">${r.type==='expense'?'-':'+'}${fmtMoney(r.amount)}
+          <span class="mono" style="color:${typeColor(r.type)};flex-shrink:0;">${typeSign(r.type)}${fmtMoney(r.amount)}
             <button data-rmrec="${r.id}" title="停止这条定期(已记的账不受影响)" style="color:var(--faint);padding:2px 6px;">✕</button>
           </span>
         </div>`).join('')}
@@ -251,13 +260,13 @@ function renderLedger(){
   ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>ldgTitle.addEventListener(ev, cancelLdgPress));
 
   el.querySelectorAll('.typebtns button').forEach(b=>b.addEventListener('click',()=>{
-    ledgerType=b.dataset.type; ledgerCategory=(ledgerType==='expense'?EXPENSE_CATS:INCOME_CATS)[0]; renderLedger();
+    ledgerType=b.dataset.type; ledgerCategory=LEDGER_CATS[ledgerType][0]; renderLedger();
   }));
   el.querySelectorAll('#catchips .chip').forEach(b=>b.addEventListener('click',()=>{
     if(b.dataset.addcat){
       const name = (prompt('新分类名称') || '').trim();
       if(!name) return;
-      const cats = (ledgerType==='expense'?EXPENSE_CATS:INCOME_CATS).concat(customCats[ledgerType]);
+      const cats = LEDGER_CATS[ledgerType].concat(customCats[ledgerType]);
       if(!cats.includes(name)) { customCats[ledgerType].push(name); saveKey('shiji-custom-cats', customCats); }
       ledgerCategory = name;
     }else{

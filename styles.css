@@ -7,6 +7,7 @@
     --brand:#C9A961; --brand-soft:rgba(201,169,97,.12);
     --expense:#C97B62; --expense-soft:rgba(201,123,98,.15);
     --income:#8FB39A; --income-soft:rgba(143,179,154,.15);
+    --saving:#7FA8C9; --saving-soft:rgba(127,168,201,.15);
     --habit:#A79BC8; --habit-soft:rgba(167,155,200,.15);
     --gadget:#C08E63; --gadget-soft:rgba(192,142,99,.15);
     --flag:#D9B15C;
@@ -24,6 +25,7 @@
     --brand:#A5813A; --brand-soft:rgba(165,129,58,.10);
     --expense:#B05A42; --expense-soft:rgba(176,90,66,.10);
     --income:#567F63; --income-soft:rgba(86,127,99,.12);
+    --saving:#3F6E8F; --saving-soft:rgba(63,110,143,.10);
     --habit:#7A6BA5; --habit-soft:rgba(122,107,165,.12);
     --gadget:#A0663F; --gadget-soft:rgba(160,102,63,.10);
     --flag:#B98A2E;
@@ -126,6 +128,7 @@
   .typebtns button{flex:1;padding:9px;border-radius:12px;font-size:14px;font-weight:600;background:var(--soft);color:var(--muted);border:1px solid transparent;letter-spacing:.08em;}
   .typebtns button.expense.active{background:var(--expense-soft);border-color:var(--expense);color:var(--expense);}
   .typebtns button.income.active{background:var(--income-soft);border-color:var(--income);color:var(--income);}
+  .typebtns button.saving.active{background:var(--saving-soft);border-color:var(--saving);color:var(--saving);}
   .amount-row{margin-bottom:12px;}
   .amount-row .sign{font-size:15px;letter-spacing:.04em;}
   .amount-row input[type=text]{flex:1;border:none;outline:none;background:transparent;font-size:22px;font-weight:600;}
@@ -142,6 +145,7 @@
   .monthnav button{color:var(--muted);font-size:18px;padding:4px 14px;}
   .monthnav span{font-size:14px;font-weight:600;letter-spacing:.14em;}
   .summary3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:14px 0 22px;}
+  .summary4{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 22px;}
   .stat{border:1px solid var(--line);border-radius:14px;background-color:var(--card);background-image:var(--card-glow);padding:12px 8px;text-align:center;}
   .stat .l{font-size:11px;letter-spacing:.1em;color:var(--muted);margin-bottom:4px;}
   .stat .v{font-size:14.5px;font-weight:700;}
@@ -274,7 +278,7 @@
     #themeBtn{top:10px;right:10px;width:34px;height:34px;}
     #installBtn{top:10px;right:52px;width:34px;height:34px;}
     .amount-row input[type=date],.gadget-form input[type=date]{max-width:40vw;}
-    .summary3{gap:7px;}
+    .summary3,.summary4{gap:7px;}
     .stat{padding:10px 4px;}
     .stat .v{font-size:13.5px;}
     .card .v{font-size:20px;}

@@ -7,6 +7,8 @@ const LISTS = [
 ];
 const EXPENSE_CATS = ['餐饮','交通','购物','娱乐','居住','医疗','人情','其他'];
 const INCOME_CATS = ['工资','奖金','理财','红包','其他'];
+const SAVING_CATS = ['应急金','旅行基金','投资','教育金','其他'];
+const LEDGER_CATS = {expense:EXPENSE_CATS, income:INCOME_CATS, saving:SAVING_CATS};
 const PRIORITIES = [
   {id:'high',label:'高',color:'#BE6B50'},
   {id:'medium',label:'中',color:'#C99B3F'},
@@ -44,7 +46,7 @@ let habits = [];
 let gadgets = [];
 let editingTxn = null;
 let editingGadget = null;
-let customCats = {expense:[], income:[]};
+let customCats = {expense:[], income:[], saving:[]};
 let recurring = []; // 定期账单规则 {id,type,amount,category,note,day,start,lastPosted}
 let ledgerSearch = '';
 let budget = 0;
@@ -162,7 +164,8 @@ async function loadAll(){
   txns = await loadKey('shiji-transactions', []);
   habits = await loadKey('shiji-habits', []);
   gadgets = await loadKey('shiji-gadgets', []);
-  customCats = await loadKey('shiji-custom-cats', {expense:[], income:[]});
+  customCats = await loadKey('shiji-custom-cats', {expense:[], income:[], saving:[]});
+  customCats.saving = customCats.saving || []; // 旧数据没有 saving 分类,补上避免后面 .concat 报错
   budget = await loadKey('shiji-budget', 0);
   categoryBudgets = await loadKey('shiji-category-budgets', {});
   journal = await loadKey('shiji-journal', {});
