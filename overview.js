@@ -113,6 +113,10 @@ function renderOverview(){
     </div>
 
     <div class="card chart-card">
+      <div id="view-gadgets"></div>
+    </div>
+
+    <div class="card chart-card">
       <h3>本月支出结构</h3>
       ${categoryData.length===0 ? `<div class="empty" style="padding:32px 0;">本月暂无支出</div>`
         : hasChart ? `<div class="chart-wrap"><canvas id="pieCanvas"></canvas></div>`
@@ -152,6 +156,8 @@ function renderOverview(){
       <div class="s" style="font-size:11px;color:var(--muted);margin-top:8px;">数据只存在浏览器本地,清缓存会丢失,建议定期导出备份</div>
     </div>
   `;
+
+  renderGadgets();
 
   const syncMsg = t => { const m = el.querySelector('#syncMsg'); if(m) m.textContent = t; };
   el.querySelector('#loginBtn')?.addEventListener('click', async ()=>{
@@ -249,7 +255,7 @@ function renderOverview(){
 
 /* ---------------- backup ---------------- */
 function exportData(){
-  const blob = new Blob([JSON.stringify({version:1, tasks, txns, habits, gadgets, customCats, budget, categoryBudgets, budgetExcludedCats, journal, recurring}, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({version:1, tasks, txns, habits, gadgets, accounts, customCats, budget, categoryBudgets, budgetExcludedCats, journal, recurring}, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `liji-backup-${todayStr()}.json`;
@@ -265,13 +271,14 @@ async function importData(e){
     if(!['tasks','txns','habits','gadgets'].every(k=>Array.isArray(data[k]))) throw new Error('不是有效的黎记备份文件');
     if(!confirm('导入会覆盖当前所有数据,确定继续?')) return;
     tasks = data.tasks; txns = data.txns; habits = data.habits; gadgets = data.gadgets;
+    if(Array.isArray(data.accounts)) accounts = data.accounts;
     if(data.customCats){ customCats = data.customCats; saveKey('shiji-custom-cats', customCats); }
     if(typeof data.budget==='number'){ budget = data.budget; saveKey('shiji-budget', budget); }
     if(data.categoryBudgets && typeof data.categoryBudgets==='object'){ categoryBudgets = data.categoryBudgets; saveKey('shiji-category-budgets', categoryBudgets); }
     if(Array.isArray(data.budgetExcludedCats)){ budgetExcludedCats = data.budgetExcludedCats; saveKey('shiji-budget-excluded-cats', budgetExcludedCats); }
     if(data.journal && typeof data.journal==='object'){ journal = data.journal; persistJournal(); }
     if(Array.isArray(data.recurring)){ recurring = data.recurring; persistRecurring(); }
-    persistTasks(); persistTxns(); persistHabits(); persistGadgets();
+    persistTasks(); persistTxns(); persistHabits(); persistGadgets(); persistAccounts();
     renderOverview();
     alert('导入成功');
   }catch(err){

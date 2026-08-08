@@ -1,7 +1,7 @@
 /* ---------------- cloud sync (Supabase) ---------------- */
 const SB_URL = 'https://xmiqcomltvkbodbqaycg.supabase.co';
 const SB_KEY = 'sb_publishable_r6MiUsRs3CsmPggYhEqY0g_bh95lo5I';
-const SYNC_KEYS = ['shiji-tasks','shiji-transactions','shiji-habits','shiji-gadgets','shiji-custom-cats','shiji-budget','shiji-category-budgets','shiji-journal','shiji-recurring'];
+const SYNC_KEYS = ['shiji-tasks','shiji-transactions','shiji-habits','shiji-gadgets','shiji-accounts','shiji-custom-cats','shiji-budget','shiji-category-budgets','shiji-journal','shiji-recurring'];
 let session = JSON.parse(localStorage.getItem('shiji-session')||'null');
 let syncMeta = JSON.parse(localStorage.getItem('shiji-sync-meta')||'{}'); // key -> 本地值的时间戳(ms)
 let dirty = new Set(JSON.parse(localStorage.getItem('shiji-dirty')||'[]')); // 尚未推到云端的 key
@@ -48,7 +48,7 @@ async function pushKey(key){
 }
 /* 行级合并:存盘时集中给变过的记录盖 u(updatedAt)、给消失的 id 记墓碑(del),
    业务代码完全不用管;同步时按 id/日期逐条比 u,大的赢,墓碑同样参与所以删除也能同步。 */
-const REC_KEYS = ['shiji-tasks','shiji-transactions','shiji-habits','shiji-gadgets','shiji-recurring'];
+const REC_KEYS = ['shiji-tasks','shiji-transactions','shiji-habits','shiji-gadgets','shiji-accounts','shiji-recurring'];
 const TOMB_TTL = 90*86400000; // 墓碑留 90 天,防止老设备把删掉的记录同步回来
 const stripU = r => JSON.stringify({...r, u:0});
 function stampRecords(key, value){

@@ -204,6 +204,7 @@ function renderLedger(){
     amount: el.querySelector('#amountInput')?.value || '',
     date: el.querySelector('#dateInput')?.value || todayStr(),
     note: el.querySelector('#noteInput')?.value || '',
+    accountId: el.querySelector('#accountSelect')?.value || '',
   };
   const cats = LEDGER_CATS[ledgerType].concat(customCats[ledgerType]);
 
@@ -233,6 +234,13 @@ function renderLedger(){
         }).join('')}
         <button class="chip" data-addcat="1" style="border-style:dashed;">＋自定义</button>
       </div>
+      ${accounts.length?`
+      <div class="row" style="margin-top:10px;">
+        <select id="accountSelect">
+          <option value="">不选账户</option>
+          ${accounts.map(a=>`<option value="${a.id}">${a.icon} ${escapeHtml(a.name)}</option>`).join('')}
+        </select>
+      </div>`:''}
       <div class="row note-row">
         <input type="text" id="noteInput" placeholder="备注（可选）" />
         ${editingTxn?`<button id="cancelTxnEdit" style="font-size:12px;color:var(--muted);flex-shrink:0;">取消</button>`:''}
@@ -315,6 +323,7 @@ function renderLedger(){
   if(cancelBtn) cancelBtn.addEventListener('click',()=>{
     editingTxn=null;
     el.querySelector('#amountInput').value=''; el.querySelector('#noteInput').value=''; el.querySelector('#dateInput').value=todayStr();
+    if(el.querySelector('#accountSelect')) el.querySelector('#accountSelect').value='';
     renderLedger();
   });
   el.querySelector('#searchInput').addEventListener('input', e=>{
@@ -341,11 +350,13 @@ function renderLedger(){
     el.querySelector('#amountInput').value = t.amount;
     el.querySelector('#dateInput').value = t.date;
     el.querySelector('#noteInput').value = t.note||'';
+    if(el.querySelector('#accountSelect')) el.querySelector('#accountSelect').value = t.accountId||'';
     renderLedger();
   });
   el.querySelector('#amountInput').value = keep.amount;
   el.querySelector('#dateInput').value = keep.date;
   el.querySelector('#noteInput').value = keep.note;
+  if(el.querySelector('#accountSelect')) el.querySelector('#accountSelect').value = keep.accountId;
 }
 
 function shiftMonth(delta){
@@ -359,9 +370,10 @@ function addTxn(){
   const amountInput = document.getElementById('amountInput');
   const dateInput = document.getElementById('dateInput');
   const noteInput = document.getElementById('noteInput');
+  const accountSelect = document.getElementById('accountSelect');
   const val = parseFloat(amountInput.value);
   if(!val || val<=0) return;
-  const rec = {type:ledgerType, amount:val, category:ledgerCategory, note:noteInput.value.trim(), date:dateInput.value||todayStr()};
+  const rec = {type:ledgerType, amount:val, category:ledgerCategory, note:noteInput.value.trim(), date:dateInput.value||todayStr(), accountId:accountSelect?.value||undefined};
   if(editingTxn){
     const t = txns.find(x=>x.id===editingTxn);
     if(t) Object.assign(t, rec);

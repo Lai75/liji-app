@@ -133,6 +133,7 @@
   .amount-row .sign{font-size:15px;letter-spacing:.04em;}
   .amount-row input[type=text]{flex:1;border:none;outline:none;background:transparent;font-size:22px;font-weight:600;}
   .amount-row input[type=date]{font-size:13px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:var(--card);}
+  #accountSelect{font-size:13px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:var(--card);color:inherit;flex:1;}
   .note-row input{flex:1;border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:13px;outline:none;background:var(--soft);}
   .note-row input:focus{border-color:var(--gold-line);}
   .add-btn{padding:9px 18px;border-radius:12px;font-weight:700;font-size:13px;flex-shrink:0;letter-spacing:.06em;
@@ -214,6 +215,17 @@
   .gadget-date{font-size:11px;color:var(--faint);margin-top:3px;}
   .gadget-del{color:var(--faint);flex-shrink:0;margin-left:4px;padding:6px;}
   .gadget-channel{font-size:11px;color:var(--muted);margin-top:9px;padding-top:9px;border-top:1px solid var(--soft-line);}
+
+  /* accounts */
+  .account-form input[type=text]{border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:13px;outline:none;flex:1;background:var(--soft);}
+  .account-form input[type=text]:focus{border-color:var(--gold-line);}
+  .account-form input[type=text].price{border:none;border-radius:0;padding:0;font-size:17px;font-weight:600;background:transparent;}
+  .account-card{border:1px solid var(--line);border-radius:14px;background-color:var(--card);background-image:var(--card-glow);padding:13px 14px;margin-bottom:9px;cursor:pointer;}
+  .account-icon{font-size:20px;flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:10px;}
+  .account-name{font-size:14.5px;font-weight:600;}
+  .account-meta{font-size:11px;color:var(--muted);margin-top:3px;}
+  .account-balance{font-size:14.5px;font-weight:700;}
+  .account-del{color:var(--faint);flex-shrink:0;margin-left:4px;padding:6px;}
 
   /* overview */
   .ticket{border-radius:14px;padding:16px 18px;margin-bottom:26px;background:#101014;color:#EDEAE3;

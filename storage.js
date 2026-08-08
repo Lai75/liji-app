@@ -23,6 +23,8 @@ const OLD_HABIT_COLORS = {'#6B5B95':'#9C8EC4','#B54834':'#BE6B50','#4C7A5E':'#74
 const WEEKDAYS = ['日','一','二','三','四','五','六'];
 const MOODS = ['😄','🙂','😐','😞','😭'];
 
+const ACCOUNT_ICONS = ['💳','🏦','💵','📱','🐷','📈','🪙','💎'];
+
 const GADGET_CATS = [
   {id:'phone',name:'手机',icon:'📱'},
   {id:'computer',name:'电脑',icon:'💻'},
@@ -44,8 +46,11 @@ let tasks = [];
 let txns = [];
 let habits = [];
 let gadgets = [];
+let accounts = [];
 let editingTxn = null;
 let editingGadget = null;
+let editingAccount = null;
+let accountFormIcon = ACCOUNT_ICONS[0];
 let customCats = {expense:[], income:[], saving:[]};
 let recurring = []; // 定期账单规则 {id,type,amount,category,note,day,start,lastPosted}
 let ledgerSearch = '';
@@ -157,6 +162,7 @@ async function persistTasks(){ await saveKey('shiji-tasks', tasks); }
 async function persistTxns(){ await saveKey('shiji-transactions', txns); }
 async function persistHabits(){ await saveKey('shiji-habits', habits); }
 async function persistGadgets(){ await saveKey('shiji-gadgets', gadgets); }
+async function persistAccounts(){ await saveKey('shiji-accounts', accounts); }
 async function persistJournal(){ await saveKey('shiji-journal', journal); }
 async function persistRecurring(){ await saveKey('shiji-recurring', recurring); }
 
@@ -165,6 +171,7 @@ async function loadAll(){
   txns = await loadKey('shiji-transactions', []);
   habits = await loadKey('shiji-habits', []);
   gadgets = await loadKey('shiji-gadgets', []);
+  accounts = await loadKey('shiji-accounts', []);
   customCats = await loadKey('shiji-custom-cats', {expense:[], income:[], saving:[]});
   customCats.saving = customCats.saving || []; // 旧数据没有 saving 分类,补上避免后面 .concat 报错
   budget = await loadKey('shiji-budget', 0);

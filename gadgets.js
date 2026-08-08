@@ -18,8 +18,7 @@ function renderGadgets(){
   const totalCount = gadgets.length;
 
   el.innerHTML = `
-    <h1 class="serif">数码库</h1>
-    <div class="sub">家里的电子产品，一目了然</div>
+    <h3>📱 数码库</h3>
 
     <div class="box gadget-form">
       <div class="row">
@@ -80,7 +79,7 @@ function renderGadgets(){
     const id = card.dataset.id;
     if(e.target.dataset.act==='delete'){
       if(editingGadget===id) editingGadget=null;
-      removeWithUndo(()=>gadgets, id, persistGadgets, renderGadgets, '这条记录');
+      removeWithUndo(()=>gadgets, id, persistGadgets, renderOverview, '这条记录');
       return;
     }
     const g = gadgets.find(x=>x.id===id);
@@ -142,6 +141,6 @@ function addGadget(){
   }
   nameInput.value=''; brandInput.value=''; priceInput.value='';
   persistGadgets();
-  renderGadgets();
+  renderOverview();
   document.getElementById('gadgetName').focus();
 }
