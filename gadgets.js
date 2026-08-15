@@ -79,7 +79,7 @@ function renderGadgets(){
     const id = card.dataset.id;
     if(e.target.dataset.act==='delete'){
       if(editingGadget===id) editingGadget=null;
-      removeWithUndo(()=>gadgets, id, persistGadgets, renderOverview, '这条记录');
+      removeWithUndo(()=>gadgets, id, persistGadgets, renderGadgets, '这条记录');
       return;
     }
     const g = gadgets.find(x=>x.id===id);
@@ -141,6 +141,6 @@ function addGadget(){
   }
   nameInput.value=''; brandInput.value=''; priceInput.value='';
   persistGadgets();
-  renderOverview();
+  renderGadgets();
   document.getElementById('gadgetName').focus();
 }

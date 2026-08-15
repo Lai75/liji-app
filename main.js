@@ -14,18 +14,26 @@ document.getElementById('themeBtn').addEventListener('click',()=>{
 });
 
 /* ---------------- nav ---------------- */
-// 手机底栏「记账/账户」共用一个槽位:在其中一页时再点一下切到另一页(data-tab 动态翻转实现)
+// 手机底栏「记账/账户」「总览/数码库」各共用一个槽位:在其中一页时再点一下切到另一页(data-tab 动态翻转实现)
 let lastMoneyTab = 'ledger';
+let lastViewTab = 'overview';
 function setTab(tab){
   activeTab = tab;
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
   const money = document.getElementById('moneyNavBtn');
   const onMoney = tab==='ledger' || tab==='accounts';
   if(onMoney) lastMoneyTab = tab;
-  const shown = onMoney ? tab : lastMoneyTab;
+  const shownMoney = onMoney ? tab : lastMoneyTab;
   money.dataset.tab = tab==='ledger' ? 'accounts' : tab==='accounts' ? 'ledger' : lastMoneyTab;
-  money.innerHTML = shown==='ledger' ? `💰<span>记账${onMoney?' ⇄':''}</span>` : `💳<span>账户${onMoney?' ⇄':''}</span>`;
+  money.innerHTML = shownMoney==='ledger' ? `💰<span>记账${onMoney?' ⇄':''}</span>` : `💳<span>账户${onMoney?' ⇄':''}</span>`;
   money.classList.toggle('active', onMoney);
+  const overviewBtn = document.getElementById('overviewNavBtn');
+  const onView = tab==='overview' || tab==='gadgets';
+  if(onView) lastViewTab = tab;
+  const shownView = onView ? tab : lastViewTab;
+  overviewBtn.dataset.tab = tab==='overview' ? 'gadgets' : tab==='gadgets' ? 'overview' : lastViewTab;
+  overviewBtn.innerHTML = shownView==='overview' ? `📊<span>总览${onView?' ⇄':''}</span>` : `📱<span>数码库${onView?' ⇄':''}</span>`;
+  overviewBtn.classList.toggle('active', onView);
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+tab).classList.add('active');
   if(tab==='tasks') renderTasks();
@@ -33,6 +41,7 @@ function setTab(tab){
   if(tab==='ledger') renderLedger();
   if(tab==='accounts') renderAccounts();
   if(tab==='overview') renderOverview();
+  if(tab==='gadgets') renderGadgets();
 }
 document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
 

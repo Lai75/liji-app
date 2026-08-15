@@ -113,10 +113,6 @@ function renderOverview(){
     </div>
 
     <div class="card chart-card">
-      <div id="view-gadgets"></div>
-    </div>
-
-    <div class="card chart-card">
       <h3>本月支出结构</h3>
       ${categoryData.length===0 ? `<div class="empty" style="padding:32px 0;">本月暂无支出</div>`
         : hasChart ? `<div class="chart-wrap"><canvas id="pieCanvas"></canvas></div>`
@@ -156,8 +152,6 @@ function renderOverview(){
       <div class="s" style="font-size:11px;color:var(--muted);margin-top:8px;">数据只存在浏览器本地,清缓存会丢失,建议定期导出备份</div>
     </div>
   `;
-
-  renderGadgets();
 
   const syncMsg = t => { const m = el.querySelector('#syncMsg'); if(m) m.textContent = t; };
   el.querySelector('#loginBtn')?.addEventListener('click', async ()=>{
