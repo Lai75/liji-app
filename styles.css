@@ -129,6 +129,8 @@
   .typebtns button.expense.active{background:var(--expense-soft);border-color:var(--expense);color:var(--expense);}
   .typebtns button.income.active{background:var(--income-soft);border-color:var(--income);color:var(--income);}
   .typebtns button.saving.active{background:var(--saving-soft);border-color:var(--saving);color:var(--saving);}
+  .typebtns button.transfer.active{background:var(--brand-soft);border-color:var(--brand);color:var(--brand);}
+  .typebtns button[disabled],.add-btn[disabled]{opacity:.5;pointer-events:none;}
   .amount-row{margin-bottom:12px;}
   .amount-row .sign{font-size:15px;letter-spacing:.04em;}
   .amount-row input[type=text]{flex:1;border:none;outline:none;background:transparent;font-size:22px;font-weight:600;}

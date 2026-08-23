@@ -8,7 +8,7 @@ function renderOverview(){
     .sort((a,b)=> a.dueDate<b.dueDate ? -1 : 1);
   const todayDone = todayTasks.filter(t=>t.completed).length;
   const todayTxns = txns.filter(t=>t.date===today);
-  const todayNet = todayTxns.reduce((s,t)=> s + (t.type==='income'?t.amount:-t.amount),0);
+  const todayNet = todayTxns.filter(t=>t.type!=='transfer').reduce((s,t)=> s + (t.type==='income'?t.amount:-t.amount),0);
 
   const thisMonth = today.slice(0,7);
   const monthTxns = txns.filter(t=>t.date.slice(0,7)===thisMonth);

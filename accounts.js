@@ -1,8 +1,20 @@
 /* ================= ACCOUNTS ================= */
 function accountColor(a){ const i = accounts.findIndex(x=>x.id===a.id); return HABIT_COLORS[(i<0?0:i) % HABIT_COLORS.length]; }
+function accountLabel(id){ const a = accounts.find(x=>x.id===id); return a ? `${a.icon} ${a.name}` : '已删除账户'; }
+function accountTxnCount(a){
+  return txns.filter(t=> t.accountId===a.id || (t.type==='transfer' && (t.fromAccountId===a.id || t.toAccountId===a.id))).length;
+}
+// 转账不算收入/支出,但要按转出/转入方向调整两边账户余额
 function accountBalance(a){
-  return txns.filter(t=>t.accountId===a.id)
-    .reduce((s,t)=> s + (t.type==='income'?t.amount:-t.amount), a.openingBalance||0);
+  return txns.reduce((s,t)=>{
+    if(t.type==='transfer'){
+      if(t.fromAccountId===a.id) return s - t.amount;
+      if(t.toAccountId===a.id) return s + t.amount;
+      return s;
+    }
+    if(t.accountId!==a.id) return s;
+    return s + (t.type==='income'?t.amount:-t.amount);
+  }, a.openingBalance||0);
 }
 
 function renderAccounts(){
@@ -79,7 +91,7 @@ function renderAccounts(){
 
 function accountCardHtml(a){
   const bal = accountBalance(a);
-  const count = txns.filter(t=>t.accountId===a.id).length;
+  const count = accountTxnCount(a);
   const color = accountColor(a);
   return `
   <div class="account-card" data-id="${a.id}" style="border-left:3px solid ${color};">

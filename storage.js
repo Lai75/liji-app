@@ -6,7 +6,7 @@ const LISTS = [
   {id:'study',name:'学习',color:'#74997F'},
 ];
 const EXPENSE_CATS = ['餐饮','交通','购物','娱乐','居住','医疗','人情','其他'];
-const INCOME_CATS = ['工资','奖金','理财','红包','其他'];
+const INCOME_CATS = ['工资','奖金','理财','红包','报销','其他'];
 const SAVING_CATS = ['应急金','旅行基金','投资','教育金','其他'];
 const LEDGER_CATS = {expense:EXPENSE_CATS, income:INCOME_CATS, saving:SAVING_CATS};
 const PRIORITIES = [
@@ -76,6 +76,7 @@ let expandedTask = null;
 let ledgerCursor = todayStr().slice(0,7);
 let ledgerType = 'expense';
 let ledgerCategory = EXPENSE_CATS[0];
+let reimburseFlag = false; // 记支出时勾选"待报销",在记账本顶部的待报销清单里track,一键核销时自动补一笔"报销"收入
 let pieChart=null, barChart=null;
 
 const uid = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36);

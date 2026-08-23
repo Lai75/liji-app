@@ -1,11 +1,11 @@
 /* ================= LEDGER ================= */
 function monthKey(d){ return d.slice(0,7); }
 
-// 三种账目类型共用的颜色/文案:支出/收入是老的,储蓄是并列加的第三种
-function typeLabel(t){ return t==='expense'?'支出':t==='saving'?'储蓄':'收入'; }
-function typeColor(t){ return t==='expense'?'var(--expense)':t==='saving'?'var(--saving)':'var(--income)'; }
-function typeColorSoft(t){ return t==='expense'?'var(--expense-soft)':t==='saving'?'var(--saving-soft)':'var(--income-soft)'; }
-function typeSign(t){ return t==='expense'?'-':'+'; }
+// 记账类型共用的颜色/文案:支出/收入是老的,储蓄/转账是后加的
+function typeLabel(t){ return t==='expense'?'支出':t==='saving'?'储蓄':t==='transfer'?'转账':'收入'; }
+function typeColor(t){ return t==='expense'?'var(--expense)':t==='saving'?'var(--saving)':t==='transfer'?'var(--brand)':'var(--income)'; }
+function typeColorSoft(t){ return t==='expense'?'var(--expense-soft)':t==='saving'?'var(--saving-soft)':t==='transfer'?'var(--brand-soft)':'var(--income-soft)'; }
+function typeSign(t){ return t==='expense'?'-':t==='transfer'?'':'+'; }
 
 /* 定期账单:每月 day 日自动补记。id 用 rec-<规则id>-<年月> 确定性生成,
    两台设备同月各补一笔时同步合并按 id 去重;去重集合读 localStorage 原始数据(含墓碑),
@@ -55,7 +55,9 @@ function addRecurring(){
 function exportLedgerCsv(){
   const rows = [['日期','类型','分类','金额(RM)','备注'],
     ...txns.slice().sort((a,b)=> a.date<b.date?1:-1)
-      .map(t=>[t.date, typeLabel(t.type), t.category, t.amount, t.note||''])];
+      .map(t=> t.type==='transfer'
+        ? [t.date, '转账', `${accountLabel(t.fromAccountId)} → ${accountLabel(t.toAccountId)}`, t.amount, t.note||'']
+        : [t.date, typeLabel(t.type), t.category, t.amount, t.note||''])];
   // BOM 让 Excel 认出 UTF-8,中文才不乱码
   const csv = String.fromCharCode(0xFEFF)+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const a = document.createElement('a');
@@ -133,13 +135,18 @@ function ledgerBodyHtml(){
       ${groupedEntries.length===0 ? `<div class="empty">${searching?'没有匹配的记录':'本月还没有记录'}</div>` : groupedEntries.map(([d,items])=>`
         <div class="day-group">
           <div class="day-label mono">${d}</div>
-          ${items.map(t=>`
+          ${items.map(t=>{
+            const isTransfer = t.type==='transfer';
+            const catText = isTransfer ? '转账' : t.category;
+            const noteText = isTransfer ? `${accountLabel(t.fromAccountId)} → ${accountLabel(t.toAccountId)}${t.note?' · '+t.note:''}` : (t.note||'');
+            const reimburseBadge = (t.type==='expense' && t.reimburse) ? ` <span style="color:var(--brand);font-size:10px;">${t.reimbursed?'✓已报销':'🧾待报销'}</span>` : '';
+            return `
             <div class="txn-row" data-id="${t.id}">
-              <span class="cat" style="background:${typeColorSoft(t.type)};color:${typeColor(t.type)};">${escapeHtml(t.category)}</span>
-              <span class="note">${escapeHtml(t.note||'')}</span>
+              <span class="cat" style="background:${typeColorSoft(t.type)};color:${typeColor(t.type)};">${escapeHtml(catText)}</span>
+              <span class="note">${escapeHtml(noteText)}${reimburseBadge}</span>
               <span class="amt mono" style="color:${typeColor(t.type)};">${typeSign(t.type)}${fmtMoney(t.amount)}</span>
               <button class="rm" data-act="rmTxn">✕</button>
-            </div>`).join('')}
+            </div>`;}).join('')}
         </div>`).join('')}
     </div>`;
 }
@@ -205,8 +212,13 @@ function renderLedger(){
     date: el.querySelector('#dateInput')?.value || todayStr(),
     note: el.querySelector('#noteInput')?.value || '',
     accountId: el.querySelector('#accountSelect')?.value || '',
+    fromAccountId: el.querySelector('#fromAccountSelect')?.value || '',
+    toAccountId: el.querySelector('#toAccountSelect')?.value || '',
   };
-  const cats = LEDGER_CATS[ledgerType].concat(customCats[ledgerType]);
+  const isTransfer = ledgerType==='transfer';
+  const cats = isTransfer ? [] : LEDGER_CATS[ledgerType].concat(customCats[ledgerType]);
+  // 待报销不按月份筛,回款经常跨月,清单要一直看得到直到核销
+  const pendingReimburse = txns.filter(t=>t.type==='expense' && t.reimburse && !t.reimbursed).sort((a,b)=> a.date<b.date?1:-1);
 
   el.innerHTML = `
     <h1 class="serif" id="ldgTitle" style="user-select:none;">记账本</h1>
@@ -216,12 +228,14 @@ function renderLedger(){
         <button class="expense ${ledgerType==='expense'?'active':''}" data-type="expense">支出</button>
         <button class="income ${ledgerType==='income'?'active':''}" data-type="income">收入</button>
         <button class="saving ${ledgerType==='saving'?'active':''}" data-type="saving">储蓄</button>
+        <button class="transfer ${ledgerType==='transfer'?'active':''}" data-type="transfer">转账</button>
       </div>
       <div class="row amount-row">
         <span class="sign mono" style="color:${typeColor(ledgerType)};">RM</span>
         <input type="text" id="amountInput" inputmode="decimal" placeholder="0.00" class="mono" />
         <input type="date" id="dateInput" value="${todayStr()}" />
       </div>
+      ${isTransfer ? '' : `
       <div class="chiprow" id="catchips">
         ${cats.map(c=>{
           const active = ledgerCategory===c;
@@ -233,19 +247,35 @@ function renderLedger(){
           </span>`;
         }).join('')}
         <button class="chip" data-addcat="1" style="border-style:dashed;">＋自定义</button>
-      </div>
-      ${accounts.length?`
+      </div>`}
+      ${isTransfer ? (accounts.length>=2 ? `
+      <div class="row" style="margin-top:10px;gap:8px;">
+        <select id="fromAccountSelect" style="flex:1;">
+          ${accounts.map(a=>`<option value="${a.id}">${a.icon} ${escapeHtml(a.name)}</option>`).join('')}
+        </select>
+        <span style="color:var(--muted);flex-shrink:0;">→</span>
+        <select id="toAccountSelect" style="flex:1;">
+          ${accounts.map(a=>`<option value="${a.id}">${a.icon} ${escapeHtml(a.name)}</option>`).join('')}
+        </select>
+      </div>` : `<div class="empty" style="padding:14px 0;font-size:12px;">至少需要两个账户才能转账,先去"账户"页添加一个吧</div>`)
+      : (accounts.length?`
       <div class="row" style="margin-top:10px;">
         <select id="accountSelect">
           <option value="">不选账户</option>
           ${accounts.map(a=>`<option value="${a.id}">${a.icon} ${escapeHtml(a.name)}</option>`).join('')}
         </select>
+      </div>`:'')}
+      ${ledgerType==='expense'?`
+      <div class="row" style="margin-top:10px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;" title="比如公司报销、代付,先记支出,回款后一键核销">
+          <input type="checkbox" id="reimburseChk" ${reimburseFlag?'checked':''}> 🧾 标记为待报销
+        </label>
       </div>`:''}
       <div class="row note-row">
         <input type="text" id="noteInput" placeholder="备注（可选）" />
         ${editingTxn?`<button id="cancelTxnEdit" style="font-size:12px;color:var(--muted);flex-shrink:0;">取消</button>`:''}
-        ${editingTxn?'':`<button id="recBtn" title="把上面填好的这笔设为每月自动记账" style="font-size:12px;color:var(--muted);flex-shrink:0;">⟳ 定期</button>`}
-        <button class="add-btn" id="addTxnBtn">${editingTxn?'保存修改':'记一笔'}</button>
+        ${editingTxn || isTransfer?'':`<button id="recBtn" title="把上面填好的这笔设为每月自动记账" style="font-size:12px;color:var(--muted);flex-shrink:0;">⟳ 定期</button>`}
+        <button class="add-btn" id="addTxnBtn" ${isTransfer && accounts.length<2?'disabled':''}>${editingTxn?'保存修改':'记一笔'}</button>
       </div>
     </div>
 
@@ -257,6 +287,19 @@ function renderLedger(){
           <span style="color:var(--ink-soft);">每月 ${r.day} 日 · ${escapeHtml(r.category)}${r.note?` · ${escapeHtml(r.note)}`:''}</span>
           <span class="mono" style="color:${typeColor(r.type)};flex-shrink:0;">${typeSign(r.type)}${fmtMoney(r.amount)}
             <button data-rmrec="${r.id}" title="停止这条定期(已记的账不受影响)" style="color:var(--faint);padding:2px 6px;">✕</button>
+          </span>
+        </div>`).join('')}
+    </div>`:''}
+
+    ${pendingReimburse.length?`
+    <div class="box" id="reimburseList" style="padding:10px 12px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">🧾 待报销 · 共 RM ${fmtMoney(pendingReimburse.reduce((s,t)=>s+t.amount,0))}</div>
+      ${pendingReimburse.map(t=>`
+        <div class="row" style="justify-content:space-between;font-size:12px;padding:3px 0;gap:8px;">
+          <span style="color:var(--ink-soft);">${t.date} · ${escapeHtml(t.category)}${t.note?` · ${escapeHtml(t.note)}`:''}</span>
+          <span class="mono" style="color:var(--expense);flex-shrink:0;">-${fmtMoney(t.amount)}
+            <button data-markreimb="${t.id}" title="标记为已收到报销款,自动记一笔「报销」收入" style="color:var(--brand);padding:2px 4px;">✓已收</button>
+            <button data-untrackreimb="${t.id}" title="不再追踪这笔待报销(不影响原支出记录)" style="color:var(--faint);padding:2px 4px;">✕</button>
           </span>
         </div>`).join('')}
     </div>`:''}
@@ -284,9 +327,9 @@ function renderLedger(){
   ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>ldgTitle.addEventListener(ev, cancelLdgPress));
 
   el.querySelectorAll('.typebtns button').forEach(b=>b.addEventListener('click',()=>{
-    ledgerType=b.dataset.type; ledgerCategory=LEDGER_CATS[ledgerType][0]; renderLedger();
+    ledgerType=b.dataset.type; if(LEDGER_CATS[ledgerType]) ledgerCategory=LEDGER_CATS[ledgerType][0]; renderLedger();
   }));
-  el.querySelector('#catchips').addEventListener('click', e=>{
+  el.querySelector('#catchips')?.addEventListener('click', e=>{
     const delBtn = e.target.closest('[data-delcat]');
     if(delBtn){
       if(!confirm(`删除自定义分类「${delBtn.dataset.delcat}」?`)) return;
@@ -321,10 +364,43 @@ function renderLedger(){
   onEnter(el.querySelector('#noteInput'), addTxn);
   const cancelBtn = el.querySelector('#cancelTxnEdit');
   if(cancelBtn) cancelBtn.addEventListener('click',()=>{
-    editingTxn=null;
+    editingTxn=null; reimburseFlag=false;
     el.querySelector('#amountInput').value=''; el.querySelector('#noteInput').value=''; el.querySelector('#dateInput').value=todayStr();
     if(el.querySelector('#accountSelect')) el.querySelector('#accountSelect').value='';
     renderLedger();
+  });
+  el.querySelector('#reimburseChk')?.addEventListener('change', e=>{ reimburseFlag = e.target.checked; });
+  el.querySelector('#reimburseList')?.addEventListener('click', e=>{
+    const markId = e.target.dataset.markreimb;
+    if(markId){
+      const t = txns.find(x=>x.id===markId);
+      if(!t) return;
+      t.reimbursed = true;
+      const incomeRec = {id:uid(), type:'income', amount:t.amount, category:'报销', note:`报销:${t.category}${t.note?'·'+t.note:''}`, date:todayStr(), accountId:t.accountId};
+      txns.unshift(incomeRec);
+      persistTxns();
+      renderLedger();
+      toast('✓ 已记为报销收入', ()=>{
+        t.reimbursed = false;
+        const idx = txns.findIndex(x=>x.id===incomeRec.id);
+        if(idx>=0) txns.splice(idx,1);
+        persistTxns();
+        renderLedger();
+      });
+      return;
+    }
+    const untrackId = e.target.dataset.untrackreimb;
+    if(untrackId){
+      const t = txns.find(x=>x.id===untrackId);
+      if(t){ t.reimburse = false; persistTxns(); renderLedger(); }
+    }
+  });
+  el.querySelector('#fromAccountSelect')?.addEventListener('change', e=>{
+    const toSel = el.querySelector('#toAccountSelect');
+    if(toSel && toSel.value===e.target.value){
+      const other = accounts.find(a=>a.id!==e.target.value);
+      if(other) toSel.value = other.id;
+    }
   });
   el.querySelector('#searchInput').addEventListener('input', e=>{
     ledgerSearch = e.target.value;
@@ -347,16 +423,24 @@ function renderLedger(){
     editingTxn = id;
     ledgerType = t.type;
     ledgerCategory = t.category;
+    reimburseFlag = !!t.reimburse;
     el.querySelector('#amountInput').value = t.amount;
     el.querySelector('#dateInput').value = t.date;
     el.querySelector('#noteInput').value = t.note||'';
     if(el.querySelector('#accountSelect')) el.querySelector('#accountSelect').value = t.accountId||'';
     renderLedger();
+    if(t.type==='transfer'){
+      const fs = el.querySelector('#fromAccountSelect'), ts = el.querySelector('#toAccountSelect');
+      if(fs) fs.value = t.fromAccountId||'';
+      if(ts) ts.value = t.toAccountId||'';
+    }
   });
   el.querySelector('#amountInput').value = keep.amount;
   el.querySelector('#dateInput').value = keep.date;
   el.querySelector('#noteInput').value = keep.note;
   if(el.querySelector('#accountSelect')) el.querySelector('#accountSelect').value = keep.accountId;
+  if(el.querySelector('#fromAccountSelect')) el.querySelector('#fromAccountSelect').value = keep.fromAccountId || accounts[0]?.id || '';
+  if(el.querySelector('#toAccountSelect')) el.querySelector('#toAccountSelect').value = keep.toAccountId || accounts[1]?.id || accounts[0]?.id || '';
 }
 
 function shiftMonth(delta){
@@ -370,10 +454,21 @@ function addTxn(){
   const amountInput = document.getElementById('amountInput');
   const dateInput = document.getElementById('dateInput');
   const noteInput = document.getElementById('noteInput');
-  const accountSelect = document.getElementById('accountSelect');
   const val = parseFloat(amountInput.value);
   if(!val || val<=0) return;
-  const rec = {type:ledgerType, amount:val, category:ledgerCategory, note:noteInput.value.trim(), date:dateInput.value||todayStr(), accountId:accountSelect?.value||undefined};
+
+  let rec;
+  if(ledgerType==='transfer'){
+    const fromAccountId = document.getElementById('fromAccountSelect')?.value;
+    const toAccountId = document.getElementById('toAccountSelect')?.value;
+    if(!fromAccountId || !toAccountId || fromAccountId===toAccountId){ toast('请选择两个不同的账户'); return; }
+    rec = {type:'transfer', amount:val, category:'转账', fromAccountId, toAccountId, note:noteInput.value.trim(), date:dateInput.value||todayStr()};
+  }else{
+    const accountSelect = document.getElementById('accountSelect');
+    rec = {type:ledgerType, amount:val, category:ledgerCategory, note:noteInput.value.trim(), date:dateInput.value||todayStr(), accountId:accountSelect?.value||undefined,
+      reimburse: ledgerType==='expense' ? reimburseFlag : undefined};
+  }
+
   if(editingTxn){
     const t = txns.find(x=>x.id===editingTxn);
     if(t) Object.assign(t, rec);
@@ -381,7 +476,7 @@ function addTxn(){
   }else{
     txns.unshift({id:uid(), ...rec});
   }
-  amountInput.value=''; noteInput.value='';  // 清空后再渲染,keep 捕获到的就是空表单(日期保留方便连续补记)
+  amountInput.value=''; noteInput.value=''; reimburseFlag=false;  // 清空后再渲染,keep 捕获到的就是空表单(日期保留方便连续补记)
   persistTxns();
   renderLedger();
   document.getElementById('amountInput').focus();
