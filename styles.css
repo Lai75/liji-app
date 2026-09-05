@@ -139,6 +139,8 @@
   .note-row input{flex:1;border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:13px;outline:none;background:var(--soft);}
   .note-row input:focus{border-color:var(--gold-line);}
   .price-hint{font-size:11.5px;color:var(--brand);margin-top:8px;}
+  .pc-row input[type=text].price{border:none;border-radius:0;padding:0;font-size:17px;font-weight:600;background:transparent;flex:1;}
+  .pc-row input[type=date]{font-size:13px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:var(--card);}
   .add-btn{padding:9px 18px;border-radius:12px;font-weight:700;font-size:13px;flex-shrink:0;letter-spacing:.06em;
     background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:var(--btn-ink);
     box-shadow:0 3px 10px rgba(0,0,0,.18);}
@@ -293,7 +295,7 @@
     .task-check,.txn-row .rm,.habit-del,.gadget-del{min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center;}
     #themeBtn{top:10px;right:10px;width:34px;height:34px;}
     #installBtn{top:10px;right:52px;width:34px;height:34px;}
-    .amount-row input[type=date],.gadget-form input[type=date]{max-width:40vw;}
+    .amount-row input[type=date],.gadget-form input[type=date],.pc-row input[type=date]{max-width:40vw;}
     .summary3,.summary4{gap:7px;}
     .stat{padding:10px 4px;}
     .stat .v{font-size:13.5px;}

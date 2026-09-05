@@ -9,9 +9,9 @@ function renderPriceCompare(){
     <div class="sub">记下同一件东西每次的价格，涨跌一眼看清</div>
 
     <div class="box">
-      <div class="row">
-        <span style="color:var(--brand);">＋</span>
-        <input type="text" id="priceItemName" placeholder="东西的名字，比如「屈臣氏洗发水」" style="flex:1;" />
+      <div class="row note-row">
+        <span style="color:var(--habit);">＋</span>
+        <input type="text" id="priceItemName" placeholder="物品" />
         <button class="add-btn" id="addPriceItemBtn">添加</button>
       </div>
     </div>
@@ -59,7 +59,8 @@ function renderPriceCompare(){
       const amt = parseFloat(box.querySelector('.priceAmountInput').value);
       if(!amt || amt<=0) return;
       const date = box.querySelector('.priceDateInput').value || todayStr();
-      (item.prices = item.prices||[]).push({id:uid(), date, amount:amt});
+      const sale = box.querySelector('.priceSaleChk').checked;
+      (item.prices = item.prices||[]).push({id:uid(), date, amount:amt, sale});
       persistPriceItems(); renderPriceCompare();
       return;
     }
@@ -67,8 +68,9 @@ function renderPriceCompare(){
       const amt = parseFloat(box.querySelector('.priceAmountInput').value);
       if(!amt || amt<=0) return;
       const date = box.querySelector('.priceDateInput').value || todayStr();
+      const sale = box.querySelector('.priceSaleChk').checked;
       const p = item.prices.find(x=>x.id===editingPriceId);
-      if(p){ p.amount = amt; p.date = date; }
+      if(p){ p.amount = amt; p.date = date; p.sale = sale; }
       editingPriceId = null;
       persistPriceItems(); renderPriceCompare();
       return;
@@ -110,16 +112,24 @@ function priceItemHtml(item){
     <div class="row price-row" data-pid="${p.id}" style="justify-content:space-between;font-size:12.5px;padding:4px 0;color:var(--ink-soft);cursor:pointer;" title="点击编辑这条">
       <span class="mono">${p.date}</span>
       <span class="row" style="gap:6px;">
+        ${p.sale?`<span style="font-size:10.5px;color:var(--habit);">🏷️打折</span>`:''}
         <span class="mono">RM ${fmtMoney(p.amount)}</span>
         <button data-act="delPrice" data-pid="${p.id}" title="删除这条" style="color:var(--faint);font-size:11px;">✕</button>
       </span>
     </div>`).join('')}
-    <div class="row" style="margin-top:8px;gap:8px;">
-      <span class="mono" style="color:var(--brand);">RM</span>
-      <input type="text" class="mono priceAmountInput" inputmode="decimal" placeholder="价格" value="${editingPrice?editingPrice.amount:''}" style="width:70px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--soft);" />
+    <div class="row pc-row" style="margin-top:8px;">
+      <span class="mono" style="color:var(--habit);">RM</span>
+      <input type="text" class="mono price priceAmountInput" inputmode="decimal" placeholder="价格" value="${editingPrice?editingPrice.amount:''}" />
       <input type="date" class="priceDateInput" value="${editingPrice?editingPrice.date:todayStr()}" />
-      ${editingPrice?`<button data-act="cancelPriceEdit" style="font-size:11px;color:var(--muted);">取消</button>`:''}
-      <button class="add-btn" data-act="${editingPrice?'savePrice':'addPrice'}" style="margin-left:auto;padding:6px 12px;font-size:12px;">${editingPrice?'保存修改':'记一次'}</button>
+    </div>
+    <div class="row" style="margin-top:8px;justify-content:space-between;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
+        <input type="checkbox" class="priceSaleChk" ${editingPrice?.sale?'checked':''}> 打折价
+      </label>
+      <div class="row" style="gap:8px;">
+        ${editingPrice?`<button data-act="cancelPriceEdit" style="font-size:11px;color:var(--muted);">取消</button>`:''}
+        <button class="add-btn" data-act="${editingPrice?'savePrice':'addPrice'}" style="padding:6px 12px;font-size:12px;">${editingPrice?'保存修改':'记一次'}</button>
+      </div>
     </div>
   </div>`;
 }
