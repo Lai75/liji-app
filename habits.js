@@ -228,7 +228,10 @@ function renderHabits(){
     <div class="box" style="margin-top:22px;position:relative;">
       <div class="row" style="justify-content:space-between;">
         <div style="font-size:13.5px;font-weight:600;">${journalDate===today?'今日随笔':'编辑随笔'} <span class="mono" style="color:var(--faint);font-weight:400;font-size:11px;">${journalDate}</span>${journalDate!==today?` <button id="cancelJournalEdit" style="font-size:11px;color:var(--muted);margin-left:4px;">返回今天</button>`:''}</div>
-        <button id="toggleJournalHidden" style="font-size:11px;color:var(--muted);">${journalHidden?'👁 显示':'🙈 隐藏'}</button>
+        <div class="row" style="gap:8px;">
+          ${(journal[journalDate]?.text || journal[journalDate]?.mood)?`<button id="delCurrentJournal" style="font-size:11px;color:var(--muted);">🗑 删除</button>`:''}
+          <button id="toggleJournalHidden" style="font-size:11px;color:var(--muted);">${journalHidden?'👁 显示':'🙈 隐藏'}</button>
+        </div>
       </div>
       <div id="journalBody" class="${journalHidden?'journal-masked':''}" style="margin-top:10px;">
         <div class="mood-row">
@@ -236,7 +239,13 @@ function renderHabits(){
         </div>
         <textarea id="journalText" placeholder="此刻的心情、今天想记下的小事…">${escapeHtml(journal[journalDate]?.text||'')}</textarea>
         ${pastEntries.length?`<div style="margin-top:12px;">${pastEntries.map(([d,e])=>`
-          <div class="journal-entry" data-date="${d}" title="点击编辑这条"><div class="jd mono">${d} ${e.mood||''}</div>${escapeHtml(e.text||'')}</div>`).join('')}</div>`:''}
+          <div class="journal-entry" data-date="${d}" title="点击编辑这条">
+            <div class="jd mono" style="display:flex;justify-content:space-between;align-items:center;">
+              <span>${d} ${e.mood||''}</span>
+              <button data-act="delJournal" data-date="${d}" title="删除这条" style="color:var(--faint);font-size:12px;">🗑</button>
+            </div>
+            ${escapeHtml(e.text||'')}
+          </div>`).join('')}</div>`:''}
       </div>
     </div>
   `;
@@ -357,9 +366,25 @@ function renderHabits(){
   el.querySelector('#cancelJournalEdit')?.addEventListener('click', ()=>{
     editingJournalDate = null; renderHabits();
   });
-  el.querySelectorAll('.journal-entry').forEach(div=>div.addEventListener('click', ()=>{
-    editingJournalDate = div.dataset.date; renderHabits();
-  }));
+  el.querySelector('#delCurrentJournal')?.addEventListener('click', ()=>{
+    removeJournalWithUndo(journalDate);
+  });
+  el.querySelector('#journalBody').addEventListener('click', e=>{
+    const delBtn = e.target.closest('[data-act=delJournal]');
+    if(delBtn){ removeJournalWithUndo(delBtn.dataset.date); return; }
+    const entryDiv = e.target.closest('.journal-entry');
+    if(entryDiv){ editingJournalDate = entryDiv.dataset.date; renderHabits(); }
+  });
+}
+
+// 随笔按日期(不是数组)存,单独写一个删除+撤销,跟其它列表用的 removeWithUndo 是同一套体验
+function removeJournalWithUndo(date){
+  const entry = journal[date];
+  if(!entry) return;
+  delete journal[date];
+  if(editingJournalDate===date) editingJournalDate = null;
+  persistJournal(); renderHabits();
+  toast('随笔已删除', ()=>{ journal[date] = entry; persistJournal(); renderHabits(); });
 }
 
 function addHabit(){

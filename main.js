@@ -17,9 +17,17 @@ document.getElementById('themeBtn').addEventListener('click',()=>{
 // 手机底栏「记账/账户」「总览/数码库」各共用一个槽位:在其中一页时再点一下切到另一页(data-tab 动态翻转实现)
 let lastMoneyTab = 'ledger';
 let lastViewTab = 'overview';
+let lastHabitTab = 'habits';
 function setTab(tab){
   activeTab = tab;
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  const habitBtn = document.getElementById('habitsNavBtn');
+  const onHabit = tab==='habits' || tab==='pricecompare';
+  if(onHabit) lastHabitTab = tab;
+  const shownHabit = onHabit ? tab : lastHabitTab;
+  habitBtn.dataset.tab = tab==='habits' ? 'pricecompare' : tab==='pricecompare' ? 'habits' : lastHabitTab;
+  habitBtn.innerHTML = shownHabit==='habits' ? `🔥<span>习惯${onHabit?' ⇄':''}</span>` : `💡<span>比价${onHabit?' ⇄':''}</span>`;
+  habitBtn.classList.toggle('active', onHabit);
   const money = document.getElementById('moneyNavBtn');
   const onMoney = tab==='ledger' || tab==='accounts';
   if(onMoney) lastMoneyTab = tab;
@@ -38,6 +46,7 @@ function setTab(tab){
   document.getElementById('view-'+tab).classList.add('active');
   if(tab==='tasks') renderTasks();
   if(tab==='habits') renderHabits();
+  if(tab==='pricecompare') renderPriceCompare();
   if(tab==='ledger') renderLedger();
   if(tab==='accounts') renderAccounts();
   if(tab==='overview') renderOverview();

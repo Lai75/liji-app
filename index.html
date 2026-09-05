@@ -17,6 +17,7 @@
     <div class="tagline">待办 · 记账 · 一目了然</div>
     <button class="nav-item" data-tab="tasks">📋&nbsp;&nbsp;待办清单</button>
     <button class="nav-item" data-tab="habits">🔥&nbsp;&nbsp;习惯打卡</button>
+    <button class="nav-item" data-tab="pricecompare">💡&nbsp;&nbsp;比价</button>
     <button class="nav-item" data-tab="ledger">💰&nbsp;&nbsp;记账本</button>
     <button class="nav-item" data-tab="accounts">💳&nbsp;&nbsp;账户</button>
     <button class="nav-item" data-tab="overview">📊&nbsp;&nbsp;总览</button>
@@ -26,6 +27,7 @@
   <main>
     <section class="view" id="view-tasks"></section>
     <section class="view" id="view-habits"></section>
+    <section class="view" id="view-pricecompare"></section>
     <section class="view" id="view-ledger"></section>
     <section class="view" id="view-accounts"></section>
     <section class="view" id="view-overview"></section>
@@ -38,7 +40,7 @@
 
 <nav id="mobilenav">
   <button class="nav-item" data-tab="tasks">📋<span>待办</span></button>
-  <button class="nav-item" data-tab="habits">🔥<span>习惯</span></button>
+  <button class="nav-item" id="habitsNavBtn" data-tab="habits">🔥<span>习惯</span></button>
   <button class="nav-item" id="moneyNavBtn" data-tab="ledger">💰<span>记账</span></button>
   <button class="nav-item" id="overviewNavBtn" data-tab="overview">📊<span>总览</span></button>
 </nav>
@@ -48,6 +50,7 @@
 <script src="./tasks.js" defer></script>
 <script src="./habits.js" defer></script>
 <script src="./ledger.js" defer></script>
+<script src="./pricecompare.js" defer></script>
 <script src="./gadgets.js" defer></script>
 <script src="./accounts.js" defer></script>
 <script src="./overview.js" defer></script>
