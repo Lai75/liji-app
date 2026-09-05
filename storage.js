@@ -54,6 +54,7 @@ let accountFormIcon = ACCOUNT_ICONS[0];
 let customCats = {expense:[], income:[], saving:[]};
 let recurring = []; // 定期账单规则 {id,type,amount,category,note,day,start,lastPosted}
 let priceItems = []; // 比价:{id,name,createdAt,prices:[{id,date,amount}]},在"比价"页自己加,不依赖记账本
+let editingPriceId = null; // 正在编辑的那条价格记录 id
 let ledgerSearch = '';
 let budget = 0;
 let categoryBudgets = {}; // 分类 -> 该分类本月预算上限 (RM)
