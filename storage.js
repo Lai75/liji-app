@@ -53,6 +53,7 @@ let editingAccount = null;
 let accountFormIcon = ACCOUNT_ICONS[0];
 let customCats = {expense:[], income:[], saving:[]};
 let recurring = []; // 定期账单规则 {id,type,amount,category,note,day,start,lastPosted}
+let priceItems = []; // 比价:{id,name,createdAt,prices:[{id,date,amount}]},在"比价"页自己加,不依赖记账本
 let ledgerSearch = '';
 let budget = 0;
 let categoryBudgets = {}; // 分类 -> 该分类本月预算上限 (RM)
@@ -172,6 +173,7 @@ async function persistGadgets(){ await saveKey('shiji-gadgets', gadgets); }
 async function persistAccounts(){ await saveKey('shiji-accounts', accounts); }
 async function persistJournal(){ await saveKey('shiji-journal', journal); }
 async function persistRecurring(){ await saveKey('shiji-recurring', recurring); }
+async function persistPriceItems(){ await saveKey('shiji-price-items', priceItems); }
 
 async function loadAll(){
   tasks = await loadKey('shiji-tasks', []);
@@ -186,5 +188,6 @@ async function loadAll(){
   budgetExcludedCats = await loadKey('shiji-budget-excluded-cats', []);
   journal = await loadKey('shiji-journal', {});
   recurring = await loadKey('shiji-recurring', []);
+  priceItems = await loadKey('shiji-price-items', []);
   habits.forEach(h=>{ if(OLD_HABIT_COLORS[h.color]) h.color = OLD_HABIT_COLORS[h.color]; });
 }
