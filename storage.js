@@ -66,6 +66,12 @@ let habitFreqType = 'daily'; // daily | weekly | weeklyCount
 let habitSelectedDays = [1,2,3,4,5]; // default weekdays for weekly picker
 let habitWeeklyTarget = 3; // 「每周 N 次」的默认次数
 let journal = {}; // 'YYYY-MM-DD' -> {mood, text} 心情随笔
+let editingJournalDate = null; // 点了某条历史随笔时设为该日期,回到今天设回 null
+let journalHidden = localStorage.getItem('shiji-journal-hidden')!=='0'; // 默认打码,点一下才看
+function toggleJournalHidden(){
+  journalHidden = !journalHidden;
+  localStorage.setItem('shiji-journal-hidden', journalHidden?'1':'0');
+}
 let taskView = 'list'; // list | cal
 let calCursor = todayStr().slice(0,7);
 let calSelected = todayStr();

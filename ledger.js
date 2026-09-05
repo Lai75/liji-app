@@ -277,6 +277,7 @@ function renderLedger(){
         ${editingTxn || isTransfer?'':`<button id="recBtn" title="把上面填好的这笔设为每月自动记账" style="font-size:12px;color:var(--muted);flex-shrink:0;">⟳ 定期</button>`}
         <button class="add-btn" id="addTxnBtn" ${isTransfer && accounts.length<2?'disabled':''}>${editingTxn?'保存修改':'记一笔'}</button>
       </div>
+      <div id="priceHint" class="price-hint" style="display:none;"></div>
     </div>
 
     ${recurring.length?`
@@ -361,6 +362,7 @@ function renderLedger(){
     if(id) removeWithUndo(()=>recurring, id, persistRecurring, renderLedger, '定期账单');
   });
   el.querySelector('#amountInput').addEventListener('input', e=>{ e.target.value = e.target.value.replace(/[^0-9.]/g,''); });
+  el.querySelector('#noteInput').addEventListener('input', updatePriceHint);
   onEnter(el.querySelector('#noteInput'), addTxn);
   const cancelBtn = el.querySelector('#cancelTxnEdit');
   if(cancelBtn) cancelBtn.addEventListener('click',()=>{
@@ -441,6 +443,23 @@ function renderLedger(){
   if(el.querySelector('#accountSelect')) el.querySelector('#accountSelect').value = keep.accountId;
   if(el.querySelector('#fromAccountSelect')) el.querySelector('#fromAccountSelect').value = keep.fromAccountId || accounts[0]?.id || '';
   if(el.querySelector('#toAccountSelect')) el.querySelector('#toAccountSelect').value = keep.toAccountId || accounts[1]?.id || accounts[0]?.id || '';
+  updatePriceHint();
+}
+
+// 备注跟以前买过的某笔支出重名(同一件东西反复买)时,提示首次/上次价格方便比价
+function updatePriceHint(){
+  const hint = document.getElementById('priceHint');
+  if(!hint) return;
+  const note = document.getElementById('noteInput').value.trim().toLowerCase();
+  const matches = note && ledgerType==='expense'
+    ? txns.filter(t=> t.type==='expense' && t.id!==editingTxn && (t.note||'').trim().toLowerCase()===note).sort((a,b)=> a.date<b.date?-1:1)
+    : [];
+  if(!matches.length){ hint.style.display='none'; return; }
+  const first = matches[0], last = matches[matches.length-1];
+  hint.style.display = '';
+  hint.textContent = first===last
+    ? `💡 上次买这个是 RM ${fmtMoney(first.amount)}（${first.date}）`
+    : `💡 首次 RM ${fmtMoney(first.amount)}（${first.date}） · 上次 RM ${fmtMoney(last.amount)}（${last.date}）`;
 }
 
 function shiftMonth(delta){

@@ -193,8 +193,9 @@ function habitCardHtml(h, today){
 function renderHabits(){
   const el = document.getElementById('view-habits');
   const today = todayStr();
+  const journalDate = editingJournalDate || today;
   const pastEntries = Object.entries(journal)
-    .filter(([d,e])=> d!==today && (e.text||e.mood))
+    .filter(([d,e])=> d!==journalDate && (e.text||e.mood))
     .sort((a,b)=> a[0]<b[0]?1:-1).slice(0,7);
 
   el.innerHTML = `
@@ -224,14 +225,19 @@ function renderHabits(){
       ${habits.length===0 ? `<div class="empty">还没有习惯，添加一个开始打卡吧</div>` : habits.map(h=>habitCardHtml(h,today)).join('')}
     </div>
 
-    <div class="box" style="margin-top:22px;">
-      <div style="font-size:13.5px;font-weight:600;">今日随笔 <span class="mono" style="color:var(--faint);font-weight:400;font-size:11px;">${today}</span></div>
-      <div class="mood-row" style="margin-top:10px;">
-        ${MOODS.map(m=>`<button data-mood="${m}" class="${journal[today]?.mood===m?'active':''}">${m}</button>`).join('')}
+    <div class="box" style="margin-top:22px;position:relative;">
+      <div class="row" style="justify-content:space-between;">
+        <div style="font-size:13.5px;font-weight:600;">${journalDate===today?'今日随笔':'编辑随笔'} <span class="mono" style="color:var(--faint);font-weight:400;font-size:11px;">${journalDate}</span>${journalDate!==today?` <button id="cancelJournalEdit" style="font-size:11px;color:var(--muted);margin-left:4px;">返回今天</button>`:''}</div>
+        <button id="toggleJournalHidden" style="font-size:11px;color:var(--muted);">${journalHidden?'👁 显示':'🙈 隐藏'}</button>
       </div>
-      <textarea id="journalText" placeholder="此刻的心情、今天想记下的小事…">${escapeHtml(journal[today]?.text||'')}</textarea>
-      ${pastEntries.length?`<div style="margin-top:12px;">${pastEntries.map(([d,e])=>`
-        <div class="journal-entry"><div class="jd mono">${d} ${e.mood||''}</div>${escapeHtml(e.text||'')}</div>`).join('')}</div>`:''}
+      <div id="journalBody" class="${journalHidden?'journal-masked':''}" style="margin-top:10px;">
+        <div class="mood-row">
+          ${MOODS.map(m=>`<button data-mood="${m}" class="${journal[journalDate]?.mood===m?'active':''}">${m}</button>`).join('')}
+        </div>
+        <textarea id="journalText" placeholder="此刻的心情、今天想记下的小事…">${escapeHtml(journal[journalDate]?.text||'')}</textarea>
+        ${pastEntries.length?`<div style="margin-top:12px;">${pastEntries.map(([d,e])=>`
+          <div class="journal-entry" data-date="${d}" title="点击编辑这条"><div class="jd mono">${d} ${e.mood||''}</div>${escapeHtml(e.text||'')}</div>`).join('')}</div>`:''}
+      </div>
     </div>
   `;
 
@@ -323,28 +329,37 @@ function renderHabits(){
     if(act==='delete'){ removeWithUndo(()=>habits, id, persistHabits, renderHabits, '习惯'); return; }
   });
   el.querySelectorAll('.mood-row button').forEach(b=>b.addEventListener('click',()=>{
-    const cur = journal[today]||{};
+    const cur = journal[journalDate]||{};
     cur.mood = cur.mood===b.dataset.mood ? '' : b.dataset.mood;
-    journal[today] = cur;
+    journal[journalDate] = cur;
     persistJournal(); renderHabits();
   }));
   // input(防抖)而非只在 change(失焦)时存:后台每分钟自动同步一次可能在没失焦时就把整页重渲染,
   // 只靠 change 会把还没失焦的输入直接冲掉
   let journalSaveTimer = null;
   el.querySelector('#journalText').addEventListener('input', e=>{
-    const cur = journal[today]||{};
+    const cur = journal[journalDate]||{};
     cur.text = e.target.value;
-    journal[today] = cur;
+    journal[journalDate] = cur;
     clearTimeout(journalSaveTimer);
     journalSaveTimer = setTimeout(persistJournal, 600);
   });
   el.querySelector('#journalText').addEventListener('change', e=>{
     clearTimeout(journalSaveTimer);
-    const cur = journal[today]||{};
+    const cur = journal[journalDate]||{};
     cur.text = e.target.value.trim();
-    journal[today] = cur;
+    journal[journalDate] = cur;
     persistJournal();
   });
+  el.querySelector('#toggleJournalHidden').addEventListener('click', ()=>{
+    toggleJournalHidden(); renderHabits();
+  });
+  el.querySelector('#cancelJournalEdit')?.addEventListener('click', ()=>{
+    editingJournalDate = null; renderHabits();
+  });
+  el.querySelectorAll('.journal-entry').forEach(div=>div.addEventListener('click', ()=>{
+    editingJournalDate = div.dataset.date; renderHabits();
+  }));
 }
 
 function addHabit(){
