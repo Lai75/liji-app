@@ -19,6 +19,14 @@ function renderPriceCompare(){
     <div id="priceItemList">
       ${list.length===0 ? `<div class="empty">还没有记录，先加一个要比价的东西吧</div>` : list.map(priceItemHtml).join('')}
     </div>
+
+    <datalist id="pcPlatformOptions">
+      <option value="Shopee"></option>
+      <option value="Lazada"></option>
+      <option value="TikTok Shop"></option>
+      <option value="官网"></option>
+      <option value="实体店"></option>
+    </datalist>
   `;
 
   el.querySelector('#addPriceItemBtn').addEventListener('click', addPriceItem);
@@ -60,7 +68,8 @@ function renderPriceCompare(){
       if(!amt || amt<=0) return;
       const date = box.querySelector('.priceDateInput').value || todayStr();
       const sale = box.querySelector('.priceSaleChk').checked;
-      (item.prices = item.prices||[]).push({id:uid(), date, amount:amt, sale});
+      const platform = box.querySelector('.pricePlatformInput').value.trim();
+      (item.prices = item.prices||[]).push({id:uid(), date, amount:amt, sale, platform});
       persistPriceItems(); renderPriceCompare();
       return;
     }
@@ -69,8 +78,9 @@ function renderPriceCompare(){
       if(!amt || amt<=0) return;
       const date = box.querySelector('.priceDateInput').value || todayStr();
       const sale = box.querySelector('.priceSaleChk').checked;
+      const platform = box.querySelector('.pricePlatformInput').value.trim();
       const p = item.prices.find(x=>x.id===editingPriceId);
-      if(p){ p.amount = amt; p.date = date; p.sale = sale; }
+      if(p){ p.amount = amt; p.date = date; p.sale = sale; p.platform = platform; }
       editingPriceId = null;
       persistPriceItems(); renderPriceCompare();
       return;
@@ -112,6 +122,7 @@ function priceItemHtml(item){
     <div class="row price-row" data-pid="${p.id}" style="justify-content:space-between;font-size:12.5px;padding:4px 0;color:var(--ink-soft);cursor:pointer;" title="点击编辑这条">
       <span class="mono">${p.date}</span>
       <span class="row" style="gap:6px;">
+        ${p.platform?`<span style="font-size:10.5px;color:var(--muted);">${escapeHtml(p.platform)}</span>`:''}
         ${p.sale?`<span style="font-size:10.5px;color:var(--habit);">🏷️打折</span>`:''}
         <span class="mono">RM ${fmtMoney(p.amount)}</span>
         <button data-act="delPrice" data-pid="${p.id}" title="删除这条" style="color:var(--faint);font-size:11px;">✕</button>
@@ -121,6 +132,9 @@ function priceItemHtml(item){
       <span class="mono" style="color:var(--habit);">RM</span>
       <input type="text" class="mono price priceAmountInput" inputmode="decimal" placeholder="价格" value="${editingPrice?editingPrice.amount:''}" />
       <input type="date" class="priceDateInput" value="${editingPrice?editingPrice.date:todayStr()}" />
+    </div>
+    <div class="row" style="margin-top:8px;">
+      <input type="text" class="pricePlatformInput" list="pcPlatformOptions" placeholder="在哪看到的（Shopee、Lazada…）" value="${editingPrice?.platform?escapeHtml(editingPrice.platform):''}" style="flex:1;" />
     </div>
     <div class="row" style="margin-top:8px;justify-content:space-between;">
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
