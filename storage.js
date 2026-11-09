@@ -167,7 +167,75 @@ function onEnter(input, fn){
   form.addEventListener('submit', e=>{ e.preventDefault(); fn(); });
 }
 
-async function persistTasks(){ await saveKey('shiji-tasks', tasks); }
+let tasksVersion = 0; // 每次本地改任务 +1,同步回来时发现版本变了就不覆盖,重新同步一次
+async function persistTasks(){ tasksVersion++; await saveKey('shiji-tasks', tasks); syncWithDeskTodo(); }
+
+// 和电脑上的 DeskTodo 桌面悬浮待办双向同步,只在本机 127.0.0.1 回环内生效;
+// DeskTodo 没开着是正常情况,2 秒超时静默失败,不打扰用户。
+// 删除靠"墓碑":上次同步时还在、现在不见了的 id 记成 deleted[id]=删除时间,双方都据此删掉;
+// 撤销删除时任务又出现了 → 去掉墓碑并刷新 updatedAt,让它比墓碑新,双方都会恢复。
+const DESKTODO_URL = 'http://127.0.0.1:51299';
+let deskSyncing = false, deskAgain = false, deskReady = false;
+async function syncWithDeskTodo(){
+  if(!deskReady) return; // 本地任务还没读出来时绝不能同步,否则空列表会被当成"全删了"
+  if(deskSyncing){ deskAgain = true; return; }
+  deskSyncing = true;
+  try{
+    const version = tasksVersion;
+    const known = await loadKey('shiji-desktodo-known', []);
+    const deleted = await loadKey('shiji-desktodo-deleted', {});
+    const now = new Date().toISOString();
+    const ids = new Set(tasks.map(t=>t.id));
+    known.forEach(id=>{ if(!ids.has(id) && !deleted[id]) deleted[id] = now; });
+    tasks.forEach(t=>{ if(deleted[t.id]){ delete deleted[t.id]; t.updatedAt = Date.now(); } });
+
+    const toRemote = tasks.map(t=>({
+      id:t.id, text:t.title, done:t.completed, date:t.dueDate||null,
+      star:t.priority==='high', created:new Date(t.createdAt).toISOString(),
+      updated:new Date(t.updatedAt||t.createdAt).toISOString(),
+    }));
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), 2000);
+    const res = await fetch(DESKTODO_URL+'/tasks', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({tasks: toRemote, deleted}), signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    if(!res.ok) return;
+    const {tasks: merged = [], deleted: mergedDeleted = {}} = await res.json();
+    if(version !== tasksVersion){ deskAgain = true; return; } // 等待期间本地又改了,别覆盖
+
+    // 保留网页里原有的排序,DeskTodo 新加的放最前面
+    const remote = new Map(merged.map(rt=>[rt.id, rt]));
+    const order = [...merged.filter(rt=>!ids.has(rt.id)).map(rt=>rt.id), ...tasks.map(t=>t.id).filter(id=>remote.has(id))];
+    const byId = new Map(tasks.map(t=>[t.id,t]));
+    const next = order.map(id=>{
+      const rt = remote.get(id), local = byId.get(id);
+      const keepPri = local?.priority && local.priority!=='high' ? local.priority : 'none';
+      return {
+        id, title: rt.text, completed: !!rt.done, dueDate: rt.date||'',
+        listId: local?.listId || LISTS[0].id,
+        priority: rt.star ? 'high' : keepPri,
+        subtasks: local?.subtasks || [],
+        createdAt: local?.createdAt || Date.parse(rt.created)||Date.now(),
+        updatedAt: Date.parse(rt.updated||rt.created)||Date.now(),
+      };
+    });
+    await saveKey('shiji-desktodo-known', merged.map(rt=>rt.id));
+    await saveKey('shiji-desktodo-deleted', mergedDeleted);
+    if(JSON.stringify(next) === JSON.stringify(tasks)) return; // 没变化就不重画,免得打断输入
+    tasks = next;
+    await saveKey('shiji-tasks', tasks);
+    if(document.getElementById('view-tasks')?.classList.contains('active')) renderTasks();
+  }catch{ /* DeskTodo 没开或网络不通,忽略 */ }
+  finally{
+    deskSyncing = false;
+    if(deskAgain){ deskAgain = false; setTimeout(syncWithDeskTodo, 50); }
+  }
+}
+// DeskTodo 那边的改动网页不会被通知,所以页面开着时每 4 秒拉一次,切回页面时立刻拉一次
+setInterval(()=>{ if(document.visibilityState==='visible') syncWithDeskTodo(); }, 4000);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') syncWithDeskTodo(); });
 async function persistTxns(){ await saveKey('shiji-transactions', txns); }
 async function persistHabits(){ await saveKey('shiji-habits', habits); }
 async function persistGadgets(){ await saveKey('shiji-gadgets', gadgets); }
@@ -191,4 +259,6 @@ async function loadAll(){
   recurring = await loadKey('shiji-recurring', []);
   priceItems = await loadKey('shiji-price-items', []);
   habits.forEach(h=>{ if(OLD_HABIT_COLORS[h.color]) h.color = OLD_HABIT_COLORS[h.color]; });
+  deskReady = true;
+  syncWithDeskTodo();
 }
