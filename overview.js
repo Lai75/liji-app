@@ -182,7 +182,7 @@ function renderOverview(){
     e.target.textContent = '同步中…';
     const ok = await syncNow();
     renderOverview();
-    toast(ok ? '✅ 同步成功' : '⚠️ 同步失败，检查网络后再试');
+    toast(ok ? '✅ 同步成功' : '⚠️ 同步失败：'+(lastSyncError||'检查网络后再试'));
   });
   el.querySelector('#todayGlance').addEventListener('click', e=>{
     const row = e.target.closest('[data-act]');

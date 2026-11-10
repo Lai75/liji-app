@@ -7,6 +7,7 @@ let syncMeta = JSON.parse(localStorage.getItem('shiji-sync-meta')||'{}'); // key
 let dirty = new Set(JSON.parse(localStorage.getItem('shiji-dirty')||'[]')); // 尚未推到云端的 key
 let syncing = false;
 let lastSyncAt = null;
+let lastSyncError = null;
 
 function saveSession(s){
   if(s && !s.expires_at) s.expires_at = Math.floor(Date.now()/1000) + (s.expires_in||3600);
@@ -129,7 +130,7 @@ async function syncNow(){
     if(pulled){ await loadAll(); applyRecurring(); setTab(activeTab); }
     else if(activeTab==='overview') renderOverview();
     return true;
-  }catch(e){ console.warn('同步失败', e.message); return false; }
+  }catch(e){ console.warn('同步失败', e.message); lastSyncError = e.message; return false; }
   finally{ syncing = false; }
 }
 window.addEventListener('online', ()=>syncNow());
