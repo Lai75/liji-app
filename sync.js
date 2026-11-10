@@ -38,7 +38,8 @@ async function sbRest(path, opts={}){
   if(!s) throw new Error('未登录');
   const r = await fetch(`${SB_URL}/rest/v1/${path}`,{...opts,headers:{apikey:SB_KEY,Authorization:'Bearer '+s.access_token,'Content-Type':'application/json',...(opts.headers||{})}});
   if(!r.ok) throw new Error('HTTP '+r.status);
-  return r.status===204 ? null : r.json();
+  const text = await r.text();
+  return text ? JSON.parse(text) : null; // insert/upsert 默认不带 return=representation,201 也可能没有 body,不能只看 204
 }
 async function pushKey(key){
   const raw = localStorage.getItem(key);
