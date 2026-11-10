@@ -89,11 +89,11 @@ function renderTasks(){
     const t = tasks.find(x=>x.id===card.dataset.id);
     if(act==='editTitle'){
       const v = e.target.value.trim();
-      if(v && v!==t.title){ t.title=v; t.updatedAt=Date.now(); persistTasks(); renderTasks(); }
+      if(v && v!==t.title){ t.title=v; persistTasks(); renderTasks(); }
     }
-    if(act==='setList'){ t.listId=e.target.value; t.updatedAt=Date.now(); persistTasks(); renderTasks(); }
-    if(act==='setPriority'){ t.priority=e.target.value; t.updatedAt=Date.now(); persistTasks(); renderTasks(); }
-    if(act==='setDue'){ t.dueDate=e.target.value; t.updatedAt=Date.now(); persistTasks(); renderTasks(); }
+    if(act==='setList'){ t.listId=e.target.value; persistTasks(); renderTasks(); }
+    if(act==='setPriority'){ t.priority=e.target.value; persistTasks(); renderTasks(); }
+    if(act==='setDue'){ t.dueDate=e.target.value; persistTasks(); renderTasks(); }
   });
 }
 
@@ -167,7 +167,6 @@ function renderTaskCalendar(el){
     const t = tasks.find(x=>x.id===e.target.closest('.subtask-row').dataset.tid);
     if(act==='calToggle') t.completed = !t.completed;
     if(act==='calUnset') t.dueDate = '';
-    t.updatedAt = Date.now();
     persistTasks(); renderTasks();
   });
   onEnter(el.querySelector('#calQuickTitle'), ()=>{
@@ -175,7 +174,7 @@ function renderTaskCalendar(el){
     const title = input.value.trim();
     if(!title) return;
     const listId = document.getElementById('calQuickList').value;
-    tasks.unshift({id:uid(),title,listId,priority:'none',dueDate:calSelected,completed:false,subtasks:[],createdAt:Date.now(),updatedAt:Date.now()});
+    tasks.unshift({id:uid(),title,listId,priority:'none',dueDate:calSelected,completed:false,subtasks:[],createdAt:Date.now()});
     persistTasks(); renderTasks();
     document.getElementById('calQuickTitle').focus();
   });
@@ -183,7 +182,6 @@ function renderTaskCalendar(el){
     const t = tasks.find(x=>x.id===e.target.value);
     if(!t) return;
     t.dueDate = calSelected;
-    t.updatedAt = Date.now();
     persistTasks(); renderTasks();
   });
 }
@@ -252,7 +250,7 @@ function addTask(){
   if(!title) return;
   const listId = document.getElementById('quickList').value;
   const dueDate = document.getElementById('quickDue').value;
-  tasks.unshift({id:uid(),title,listId,priority:'none',dueDate,completed:false,subtasks:[],createdAt:Date.now(),updatedAt:Date.now()});
+  tasks.unshift({id:uid(),title,listId,priority:'none',dueDate,completed:false,subtasks:[],createdAt:Date.now()});
   persistTasks();
   renderTasks();
   document.getElementById('quickTitle').focus();
@@ -265,7 +263,7 @@ function handleTaskListClick(e){
   const t = tasks.find(x=>x.id===id);
   const act = e.target.dataset.act;
 
-  if(act==='toggle'){ t.completed=!t.completed; t.updatedAt=Date.now(); persistTasks(); renderTasks(); return; }
+  if(act==='toggle'){ t.completed=!t.completed; persistTasks(); renderTasks(); return; }
   if(act==='moveUp'||act==='moveDown'){
     // ponytail: 在完整 tasks 数组里和相邻项交换;若相邻项被当前筛选隐藏,需多点几次才见效
     const idx = tasks.findIndex(x=>x.id===id);
